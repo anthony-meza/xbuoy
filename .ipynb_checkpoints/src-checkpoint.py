@@ -281,3 +281,19 @@ def add_wtemp_density(xsdf):
     xsdf["wtemp_density"] = 100 * numerator / denominator
 
     return xsdf
+
+def fetch_station_historical_bounds(station_ids):
+    """
+    Fetches the historical bounds (min and max years) for a list of station IDs using parallel processing.
+
+    Parameters:
+    station_ids (list): List of station IDs to fetch historical bounds for.
+
+    Returns:
+    list: A list of dictionaries, each containing the station ID as the key and a tuple (min_year, max_year) as the value.
+    """
+    # Use ThreadPoolExecutor for parallel processing of the get_historical_bounds function
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        observation_bounds = list(executor.map(get_historical_bounds, station_ids))
+
+    return observation_bounds
