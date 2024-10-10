@@ -19,6 +19,67 @@ longitude_sign = lambda x: 1 if x == "E" else -1
 get_latitude = lambda number, direction: float(number) * latitude_sign(direction)
 get_longitude = lambda number, direction: float(number) * longitude_sign(direction)
 
+def get_buoy_metadata():
+    # Load the station data, skip the first row, and replace NaN with a space
+    stations = pd.read_csv("https://www.ndbc.noaa.gov/data/stations/station_table.txt", sep="|", na_values="").iloc[1:].fillna(" ")
+    
+    # Rename the first column to 'station_id'
+    stations.rename(columns={stations.columns[0]: "station_id"}, inplace=True)
+    
+    # Filter stations to only include buoys
+    stations = stations[stations.iloc[:, 2].str.lower().str.contains("buoy")]
+    
+    # Extract station IDs and convert them to strings
+    station_id = stations.iloc[:, 0].astype(str).tolist()
+    
+    # Extract and convert latitude and longitude
+    station_location = stations.iloc[:, 6]
+    station_latitude = [get_latitude(loca.split()[0], loca.split()[1]) for loca in station_location]
+    station_longitude = [get_longitude(loca.split()[2], loca.split()[3]) for loca in station_location]
+    
+    observation_bounds = fetch_station_historical_bounds(station_id)
+    
+    # Convert the list of dicts into a single dict
+    observation_bounds_dict = {k: v for d in observation_bounds for k, v in d.items()}
+    
+    # Create a DataFrame, filter out stations with NaN bounds
+    observation_bounds_df = pd.DataFrame(observation_bounds_dict).dropna(axis=1)
+    
+    # Filter the stations DataFrame to include only stations with valid bounds
+    stations_filt = stations[stations['station_id'].isin(observation_bounds_df.columns)]
+    
+    # Reshape the bounds DataFrame and merge it with the filtered stations DataFrame
+    observation_bounds_filt = (
+        observation_bounds_df.T
+        .reset_index()
+        .rename(columns={"index": "station_id", 0: "min_year", 1: "max_year"})
+    )
+    
+    # Set station_id as the index for merging
+    stations_filt.set_index("station_id", inplace=True)
+    observation_bounds_filt.set_index("station_id", inplace=True)
+    
+    # Merge the filtered stations with their corresponding observation bounds
+    stations_filt = stations_filt.merge(observation_bounds_filt, left_index=True, right_index=True)
+    stations_filt = stations_filt.rename(columns=lambda x: x.strip())
+    return stations_filt
+
+
+def get_buoy_stations(data_format = "xarray"):
+
+    bmetadata = get_buoy_metadata()
+    #space_time_data
+    buoy_stations = bmetadata[["min_year", "max_year"]].astype(float)
+    buoy_stations['notes'] = bmetadata['NOTE']
+    buoy_stations["latitude"] = bmetadata["LOCATION"].apply(lambda x: get_latitude(x.split()[0], x.split()[1]))
+    buoy_stations["longitude"] = bmetadata["LOCATION"].apply(lambda x: get_longitude(x.split()[2], x.split()[3]))
+    buoy_stations.index = buoy_stations.index.astype(str)
+
+    if data_format == "xarray":
+        return buoy_stations.to_xarray()
+    else:
+        return buoy_stations
+
 def box_filter_buoys(ds, lon1=-180, lon2=180, lat1=-90, lat2=90):
     """
     Filters the dataset to include only stations within a specified geographic box.
@@ -134,7 +195,7 @@ def get_historical_bounds(station_id):
     except:
         return {station_id: (np.nan, np.nan)}
 
-def extract_historical_year(yr, station_id='tplm2', sample_rate="D"):
+def extract_historical_year(yr, station_id='tplm2', sample_rate="D", display_error = False):
     """
     Extracts and processes historical temperature data for a specific year and station.
     
@@ -166,8 +227,8 @@ def extract_historical_year(yr, station_id='tplm2', sample_rate="D"):
             sdf = pd.read_csv(slink, delimiter=r"\s+")
             
         # If "WTMP" (water temperature) is not in the columns, return None
-        if "WTMP" not in sdf.columns:
-            print(sdf.columns)
+        if ("WTMP" not in sdf.columns) and display_error:
+            print("WTMP not found")
             return None
         
         # Replace invalid values (99, 999, 9999) with NaN
@@ -197,7 +258,7 @@ def extract_historical_year(yr, station_id='tplm2', sample_rate="D"):
     except: 
         return None
 
-def station_records(station_list, years, sample_rate="D", debugging=False):
+def get_station_records(station_list, years, sample_rate="D", debugging=False):
     """
     Retrieves and processes historical records for multiple stations and years.
     
@@ -266,7 +327,7 @@ def add_latitude_longitude(xsdf, reference_station_ds):
 
     return xsdf
 
-def add_wtemp_density(xsdf):
+def add_wtemp_coverage(xsdf):
     """
     Adds a water temperature density variable to the dataset, representing the percentage of valid temperature data.
     
@@ -278,7 +339,8 @@ def add_wtemp_density(xsdf):
     """
     numerator = (~np.isnan(xsdf["WTMP"])).sum(dim="time")
     denominator = len(xsdf.time)
-    xsdf["wtemp_density"] = 100 * numerator / denominator
+    xsdf["wtemp_coverage"] = 100 * numerator / denominator
+    xsdf["wtemp_coverage"].attrs["decription"] = "percentage of existing water temperature data across entire time interval length"
 
     return xsdf
 
