@@ -27,4 +27,4 @@ Interested in contributing? Check out the contributing guidelines. Please note t
 
 Setting up came from the [`pypkg`](https://py-pkgs.org/03-how-to-package-a-python.html) instructions and poetry. 
 
-To initialize poetry, use `poetry install` in the root. Then add dependencies using `poetry add`. Finally, you can test build this using `poetry build`. 
+If developing, use poetry. To initialize poetry, use `poetry install` in the root. Then add dependencies using `poetry add`. Finally, you can test build this using `poetry build`. Finally, the package can be installed into a conda enviornment using `pip install ./dist/xbuoy-X.X.X-py3-none-any.whl`
