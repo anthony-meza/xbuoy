@@ -6,7 +6,6 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from ndbc_api import NdbcApi
 import concurrent.futures
-from tqdm.autonotebook import tqdm
 import os 
 
 # Initialize the NDBC API object
