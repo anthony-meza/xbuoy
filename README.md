@@ -5,7 +5,7 @@ A package to aggregate buoy data into xarray objects
 ## Installation
 
 ```bash
-$ pip install xbuoy
+$ pip install --force-reinstall git+https://github.com/anthony-meza/xbuoy.git@main
 ```
 
 ## Usage
