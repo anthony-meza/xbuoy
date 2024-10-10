@@ -7,8 +7,12 @@ license = "MIT"
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-
+python = ">=3.10,<3.13"
+ndbc-api = "^0.24.8.31.1"
+xarray = "^2024.9.0"
+cartopy = "^0.24.1"
+matplotlib = "^3.9.2"
+cmocean = "^4.0.3"
 [tool.poetry.dev-dependencies]
 
 [build-system]
