@@ -6,7 +6,6 @@ import cartopy.crs as ccrs
 import cartopy.mpl.ticker as cticker
 from ndbc_api import NdbcApi
 import concurrent.futures
-from tqdm.contrib.concurrent import process_map, thread_map
 from tqdm.autonotebook import tqdm
 import os 
 
