@@ -1,6 +1,6 @@
 # xbuoy
 
-A package to aggregate buoy data into xarray objects
+A package to aggregate buoy data (see [ndbc-api](https://github.com/CDJellen/ndbc-api))into xarray objects 
 
 ## Installation
 
