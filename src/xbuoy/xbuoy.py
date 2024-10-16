@@ -297,7 +297,7 @@ def add_variable_coverage(xsdf, varname = "WTMP"):
     numerator = (~np.isnan(xsdf[varname])).sum(dim="time")
     denominator = len(xsdf.time)
     xsdf[f"{varname}_coverage"] = 100 * numerator / denominator
-    xsdf[f"{varname}_coverage"].attrs["decription"] = f"percentage of existing f"{varname} data across specified interval length"
+    xsdf[f"{varname}_coverage"].attrs["decription"] = f"percentage of existing f"{varname}" data across specified interval length"
 
     return xsdf
 
