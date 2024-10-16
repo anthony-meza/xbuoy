@@ -1,6 +1,6 @@
 # xbuoy
 
-A package to aggregate buoy data (see [ndbc-api](https://github.com/CDJellen/ndbc-api))into xarray objects 
+A package to aggregate buoy data (see [ndbc-api](https://github.com/CDJellen/ndbc-api)) into xarray objects so you can make cool plots like this!
 
 <img width="585" alt="Screenshot 2024-10-16 at 5 13 39 PM" src="https://github.com/user-attachments/assets/9a64a9b2-21a4-48b6-8452-36e5807dcc2f">
 
