@@ -10,6 +10,12 @@ A package to aggregate buoy data (see [ndbc-api](https://github.com/CDJellen/ndb
 $ pip install --force-reinstall git+https://github.com/anthony-meza/xbuoy.git@main
 ```
 
+or 
+
+
+```bash
+$ pip install --upgrade git+https://github.com/anthony-meza/xbuoy.git@main
+```
 ## Usage
 
 - TODO
