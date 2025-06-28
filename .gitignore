@@ -7,3 +7,4 @@ examples/*.nc
 .ipynb_checkpoints/*
 /examples/copernicus-data
 /examples/local_folder
+/.conda
