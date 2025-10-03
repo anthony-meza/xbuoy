@@ -44,12 +44,8 @@ data = xbuoy.fetch_data(
 # Plot stations colored by data coverage
 fig, ax = xbuoy.plot_stations(data, variable="wtemp_coverage")
 ```
+Check the `examples/` directory for Jupyter notebooks examples. 
 
-## Documentation
-
-- **Quick Start:** See [getting_started.ipynb](examples/getting_started.ipynb)
-- **API Reference:** Main functions are `list_stations()`, `fetch_data()`, `filter_by_region()`, `plot_stations()`
-- **Examples:** Check the `examples/` directory for Jupyter notebooks
 
 ### For developers (using Poetry)
 
@@ -67,7 +63,6 @@ poetry build
 # Install locally
 pip install ./dist/xbuoy-X.X.X-py3-none-any.whl
 ```
-
 
 ## Contributing
 
