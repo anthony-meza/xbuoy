@@ -3,7 +3,7 @@
 A Python package for accessing and analyzing NOAA NDBC buoy data. Built on top of [ndbc-api](https://github.com/CDJellen/ndbc-api), `xbuoy` provides a simple interface to fetch, process, and visualize oceanographic buoy observations as xarray datasets.
 
 <p align="center">
-  <strong>North American Buoy Temperature Trends (1992-2021) </strong><br>
+  <strong>Buoy Temperature Trends (1992-2021) </strong><br>
   <img width="585" src="https://github.com/user-attachments/assets/9a64a9b2-21a4-48b6-8452-36e5807dcc2f">
 </p>
 
