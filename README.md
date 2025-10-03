@@ -4,53 +4,18 @@ A Python package for accessing and analyzing NOAA NDBC buoy data. Built on top o
 
 <img width="585" alt="Screenshot 2024-10-16 at 5 13 39 PM" src="https://github.com/user-attachments/assets/9a64a9b2-21a4-48b6-8452-36e5807dcc2f">
 
-## Features
-
-- 🌊 **Easy data access** - Fetch buoy data with just a few lines of code
-- 📊 **xarray integration** - Work with familiar scientific Python tools
-- 🗺️ **Geographic filtering** - Filter stations by region
-- 📈 **Built-in visualization** - Create maps with Cartopy
-- ⚡ **Parallel downloads** - Fast data retrieval using concurrent processing
-
 ## Installation
 
-### Using pip (recommended for users)
+### Using a Python virtual environment (recommended)
 
 ```bash
-pip install git+https://github.com/anthony-meza/xbuoy.git@main
-```
-
-### Using a virtual environment (recommended)
-
-```bash
-# Create a virtual environment
-python -m venv xbuoy-env
-
-# Activate the virtual environment
-# On macOS/Linux:
-source xbuoy-env/bin/activate
-# On Windows:
-xbuoy-env\Scripts\activate
+# Create and activate a virtual environment
+$ python -m venv xbuoy-env
+$ source xbuoy-env/bin/activate  # On macOS/Linux
+$ xbuoy-env\Scripts\activate     # On Windows
 
 # Install xbuoy
-pip install git+https://github.com/anthony-meza/xbuoy.git@main
-```
-
-### For developers (using Poetry)
-
-```bash
-# Clone the repository
-git clone https://github.com/anthony-meza/xbuoy.git
-cd xbuoy
-
-# Install dependencies with Poetry
-poetry install
-
-# Build the package
-poetry build
-
-# Install locally
-pip install ./dist/xbuoy-X.X.X-py3-none-any.whl
+$ pip install git+https://github.com/anthony-meza/xbuoy.git@main
 ```
 
 ## Quick Start
@@ -80,52 +45,29 @@ data = xbuoy.fetch_data(
 fig, ax = xbuoy.plot_stations(data, variable="wtemp_coverage")
 ```
 
-## Core Functions
+## Documentation
 
-The package provides a simple, high-level API:
+- **Quick Start:** See [getting_started.ipynb](examples/getting_started.ipynb)
+- **API Reference:** Main functions are `list_stations()`, `fetch_data()`, `filter_by_region()`, `plot_stations()`
+- **Examples:** Check the `examples/` directory for Jupyter notebooks
 
-- **`list_stations()`** - Get metadata for all NDBC buoy stations
-- **`fetch_data()`** - Download historical buoy observations
-- **`filter_by_region()`** - Filter datasets by geographic bounds
-- **`plot_stations()`** - Visualize station locations on a map
+### For developers (using Poetry)
 
-See the [getting started notebook](examples/getting_started.ipynb) for more examples.
-
-## Examples
-
-Check out the `examples/getting_started.ipynb` notebook for a comprehensive tutorial covering:
-- Listing and filtering buoy stations
-- Fetching historical data from NDBC
-- Visualizing station locations on maps
-- Computing temperature anomalies
-- Working with multiple stations
-
-To run the notebook:
 ```bash
-pip install jupyter
-jupyter notebook examples/getting_started.ipynb
+# Clone the repository
+git clone https://github.com/anthony-meza/xbuoy.git
+cd xbuoy
+
+# Install dependencies with Poetry
+poetry install
+
+# Build the package
+poetry build
+
+# Install locally
+pip install ./dist/xbuoy-X.X.X-py3-none-any.whl
 ```
 
-## Advanced Usage
-
-For advanced users, all backend functions are still accessible:
-
-```python
-from xbuoy import station_metadata, data_retrieval, data_processing
-
-# Get detailed metadata
-metadata = station_metadata.get_buoy_metadata()
-
-# Low-level data retrieval
-records = data_retrieval.get_station_records(
-    station_list=["tplm2"],
-    years=[2020],
-    sample_rate="H"  # Hourly
-)
-
-# Add custom processing
-processed = data_processing.compute_data_coverage(records, variable="WSPD")
-```
 
 ## Contributing
 
