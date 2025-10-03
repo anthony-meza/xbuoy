@@ -4,7 +4,10 @@
 data/*
 plots/*
 examples/*.nc
-.ipynb_checkpoints/*
+
+.ipynb_checkpoints
+examples/.ipynb_checkpoints
+
 /examples/copernicus-data
 /examples/local_folder
 /.conda
