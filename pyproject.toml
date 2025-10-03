@@ -13,7 +13,9 @@ xarray = "^2024.9.0"
 cartopy = "^0.24.1"
 matplotlib = "^3.9.2"
 cmocean = "^4.0.3"
-[tool.poetry.dev-dependencies]
+tqdm = "^4.66.0"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
