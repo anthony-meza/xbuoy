@@ -36,8 +36,8 @@ fig, ax = xbuoy.plot_stations(caribbean)
 
 # Fetch historical data for specific stations
 data = xbuoy.fetch_data(
-    station_ids=["tplm2", "44013"],
-    years=range(2018, 2021),
+    station_ids=["42095"],
+    years=range(2000, 2021),
     sample_rate="D"  # Daily averages
 )
 
