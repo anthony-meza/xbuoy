@@ -6,6 +6,11 @@ A Python package for accessing and analyzing NOAA NDBC buoy data. Built on top o
   <img width="585" alt="Screenshot 2024-10-16 at 5 13 39 PM" src="https://github.com/user-attachments/assets/9a64a9b2-21a4-48b6-8452-36e5807dcc2f">
 </p>
 
+<p align="center">
+  <strong>Your Centered Text</strong><br>
+  <img width="585" src="https://github.com/user-attachments/assets/9a64a9b2-21a4-48b6-8452-36e5807dcc2f">
+</p>
+
 ## Installation
 
 ### Using a Python virtual environment (recommended)
