@@ -1,6 +1,6 @@
 # xbuoy
 
-A Python package for accessing and analyzing NOAA NDBC buoy data. Built on top of [ndbc-api](https://github.com/CDJellen/ndbc-api), `xbuoy` provides a simple interface to fetch, process, and visualize oceanographic buoy observations as xarray datasets.
+xbuoy is a Python package for accessing and analyzing buoy data distributed by the National Data Buoy Center (NDBC). Built on top of [ndbc-api](https://github.com/CDJellen/ndbc-api), `xbuoy` provides a simple interface to fetch, process, and visualize oceanographic buoy observations as xarray datasets.
 
 <p align="center">
   <strong>Buoy Temperature Trends (1992-2021) </strong><br>
