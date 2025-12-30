@@ -8,4 +8,9 @@ examples/*.nc
 /examples/copernicus-data
 /examples/local_folder
 /.conda
-.__pycache__
+/__pycache__
+/dist
+
+/__pycache__
+/dist
+poetry.lock
