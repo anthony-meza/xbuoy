@@ -8,3 +8,4 @@ examples/*.nc
 /examples/copernicus-data
 /examples/local_folder
 /.conda
+.__pycache__
