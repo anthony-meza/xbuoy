@@ -3,15 +3,6 @@ xbuoy - A Python package for accessing and analyzing NOAA NDBC buoy data.
 
 This package provides tools to fetch, process, and visualize oceanographic data
 from NOAA's National Data Buoy Center (NDBC).
-
-Module Organization
--------------------
-- core: High-level user-facing API (recommended for most users)
-- station_metadata: Fetch detailed buoy station information
-- data_retrieval: Low-level data download functions
-- data_processing: Process and enhance buoy datasets
-- geographic_filters: Filter stations by geographic region
-- plotting: Visualize buoy locations and data on maps
 """
 
 # Read version from installed package
