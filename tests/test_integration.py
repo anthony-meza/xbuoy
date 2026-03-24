@@ -12,6 +12,8 @@ import numpy as np
 import xbuoy
 from xbuoy import core, station_metadata, data_processing, geographic_filters
 
+pytestmark = pytest.mark.integration
+
 
 class TestCoreAPI:
     """Test the high-level user-facing API."""

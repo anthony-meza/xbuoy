@@ -9,7 +9,6 @@ import warnings
 import pandas as pd
 import numpy as np
 import xarray as xr
-from ndbc_api import NdbcApi
 import concurrent.futures
 import os
 from typing import List, Optional
@@ -18,8 +17,12 @@ from tqdm import tqdm
 # Suppress deprecation warnings from ndbc_api
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='ndbc_api')
 
-# Initialize the NDBC API object
-api = NdbcApi()
+
+def _get_api():
+    """Create the NDBC client only when data retrieval is requested."""
+    from ndbc_api import NdbcApi
+
+    return NdbcApi()
 
 
 def has_extra_headers(url: str) -> bool:
@@ -70,6 +73,7 @@ def extract_historical_year(
         Returns None if data extraction fails.
     """
     try:
+        api = _get_api()
         # Column name mappings for date/time fields
         replace_names = {
             'YY': "year", "#YY": "year", "YYYY": "year",

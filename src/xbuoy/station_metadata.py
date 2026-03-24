@@ -8,7 +8,6 @@ including station locations, available time ranges, and other station informatio
 import warnings
 import pandas as pd
 import numpy as np
-from ndbc_api import NdbcApi
 import concurrent.futures
 from typing import Union, Dict, Tuple, List
 from tqdm import tqdm
@@ -16,8 +15,12 @@ from tqdm import tqdm
 # Suppress deprecation warnings from ndbc_api
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='ndbc_api')
 
-# Initialize the NDBC API object
-api = NdbcApi()
+
+def _get_api():
+    """Create the NDBC client only when metadata functions are invoked."""
+    from ndbc_api import NdbcApi
+
+    return NdbcApi()
 
 
 def _latitude_sign(direction: str) -> int:
@@ -56,6 +59,7 @@ def get_historical_bounds(station_id: str) -> Dict[str, Tuple[str, str]]:
         If data retrieval fails, returns (np.nan, np.nan).
     """
     try:
+        api = _get_api()
         # Fetch available historical data as a DataFrame
         historical_df = api.available_historical(station_id=station_id, as_df=True)
         # Retain only the first row and drop columns with NA values

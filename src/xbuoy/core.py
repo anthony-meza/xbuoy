@@ -9,9 +9,6 @@ import xarray as xr
 import pandas as pd
 from typing import List, Union, Optional
 
-from .station_metadata import get_buoy_stations as _get_stations_metadata
-from .data_retrieval import get_station_records as _fetch_records
-from .data_processing import add_latitude_longitude, compute_data_coverage
 from .geographic_filters import box_filter_buoys
 
 
@@ -47,6 +44,8 @@ def list_stations(
     ...     region={'lon_min': -85, 'lon_max': -60, 'lat_min': 10, 'lat_max': 25}
     ... )
     """
+    from .station_metadata import get_buoy_stations as _get_stations_metadata
+
     stations = _get_stations_metadata(data_format=data_format)
 
     # Apply geographic filter if specified
@@ -109,6 +108,10 @@ def fetch_data(
     >>> data = xbuoy.fetch_data("tplm2", range(2015, 2021))
     >>> data = xbuoy.compute_data_coverage(data, variable="WTMP")
     """
+    from .data_processing import add_latitude_longitude
+    from .data_retrieval import get_station_records as _fetch_records
+    from .station_metadata import get_buoy_stations as _get_stations_metadata
+
     # Normalize inputs to lists
     if isinstance(station_ids, str):
         station_ids = [station_ids]

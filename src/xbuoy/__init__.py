@@ -1,6 +1,9 @@
-# Read version from installed package
-from importlib.metadata import version
-__version__ = version("xbuoy")
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("xbuoy")
+except PackageNotFoundError:
+    __version__ = "0.1.0"
 
 from .core import (
     list_stations,
@@ -8,9 +11,16 @@ from .core import (
     filter_by_region,
 )
 
-from .plotting import (
-    plot_stations,
-)
+try:
+    from .plotting import (
+        plot_stations,
+    )
+except ImportError:
+    def plot_stations(*args, **kwargs):
+        raise ImportError(
+            "plot_stations requires optional plotting dependencies such as "
+            "matplotlib and cartopy."
+        )
 
 from .station_metadata import (
     get_buoy_metadata,

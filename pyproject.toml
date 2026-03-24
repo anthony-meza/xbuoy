@@ -1,22 +1,39 @@
-[tool.poetry]
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
 name = "xbuoy"
 version = "0.1.0"
 description = "A package to aggregate buoy data into xarray objects"
-authors = ["Anthony Meza"]
-license = "MIT"
 readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = {text = "MIT"}
+authors = [
+  {name = "Anthony Meza"},
+]
+dependencies = [
+  "ndbc-api>=0.24.8.31.1",
+  "xarray>=2024.9.0",
+  "cartopy>=0.24.1",
+  "matplotlib>=3.9.2",
+  "cmocean>=4.0.3",
+  "tqdm>=4.66.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-ndbc-api = "^0.24.8.31.1"
-xarray = "^2024.9.0"
-cartopy = "^0.24.1"
-matplotlib = "^3.9.2"
-cmocean = "^4.0.3"
-tqdm = "^4.66.0"
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+]
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+  "integration: tests that require live network access and external services",
+]
+testpaths = ["tests"]

@@ -1,6 +1,10 @@
 *.zarr
 .DS_Store
 **/.ipynb_checkpoints
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
 data/*
 plots/*
 examples/*.nc
@@ -8,9 +12,5 @@ examples/*.nc
 /examples/copernicus-data
 /examples/local_folder
 /.conda
-/__pycache__
-/dist
-
-/__pycache__
 /dist
 poetry.lock
