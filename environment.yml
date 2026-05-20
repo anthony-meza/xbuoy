@@ -1,0 +1,19 @@
+name: xbuoy-test
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - numpy>=2.0.0
+  - pandas>=2.2.0
+  - xarray>=2024.9.0
+  - cartopy>=0.24.1
+  - matplotlib>=3.9.2
+  - cmocean>=4.0.3
+  - tqdm>=4.66.0
+  - pytest>=8.0.0
+  - nbclient>=0.10.0
+  - nbformat>=5.10.0
+  - ipykernel>=6.29.0
+  - pip:
+      - -e .[dev]

@@ -1,26 +1,11 @@
 """
-Metadata retrieval for NDBC buoy stations.
-
-This module provides functions to fetch and process metadata for NOAA NDBC buoy stations,
-including station locations, available time ranges, and other station information.
+Station metadata retrieval for NOAA NDBC stations.
 """
 
-import warnings
 import pandas as pd
-import numpy as np
-import concurrent.futures
-from typing import Union, Dict, Tuple, List
-from tqdm import tqdm
+import xarray as xr
 
-# Suppress deprecation warnings from ndbc_api
-warnings.filterwarnings('ignore', category=DeprecationWarning, module='ndbc_api')
-
-
-def _get_api():
-    """Create the NDBC client only when metadata functions are invoked."""
-    from ndbc_api import NdbcApi
-
-    return NdbcApi()
+NDBC_STATION_TABLE_URL = "https://www.ndbc.noaa.gov/data/stations/station_table.txt"
 
 
 def _latitude_sign(direction: str) -> int:
@@ -43,153 +28,83 @@ def _get_longitude(number: str, direction: str) -> float:
     return float(number) * _longitude_sign(direction)
 
 
-def get_historical_bounds(station_id: str) -> Dict[str, Tuple[str, str]]:
+def get_buoy_metadata() -> xr.Dataset:
     """
-    Retrieve the first and last available historical data years for a station.
-
-    Parameters
-    ----------
-    station_id : str
-        ID of the station.
+    Fetch metadata for NDBC buoy stations from the public station table.
 
     Returns
     -------
-    dict
-        Dictionary with station_id as the key and a tuple (min_year, max_year) as the value.
-        If data retrieval fails, returns (np.nan, np.nan).
+    xr.Dataset
+        Dataset indexed by station_id with NDBC station table fields.
     """
-    try:
-        api = _get_api()
-        # Fetch available historical data as a DataFrame
-        historical_df = api.available_historical(station_id=station_id, as_df=True)
-        # Retain only the first row and drop columns with NA values
-        historical_df = historical_df.iloc[[0], :].dropna(axis=1)
-        # Extract years from the column names (excluding columns with spaces)
-        available_historical = np.array([col for col in historical_df.columns if " " not in col])
-
-        return {station_id: (min(available_historical), max(available_historical))}
-    except Exception:
-        return {station_id: (np.nan, np.nan)}
-
-
-def fetch_station_historical_bounds(station_ids: List[str]) -> List[Dict[str, Tuple[str, str]]]:
-    """
-    Fetch the historical bounds (min and max years) for multiple stations using parallel processing.
-
-    Parameters
-    ----------
-    station_ids : list of str
-        List of station IDs to fetch historical bounds for.
-
-    Returns
-    -------
-    list of dict
-        A list of dictionaries, each containing the station ID as the key and
-        a tuple (min_year, max_year) as the value.
-    """
-    # Use ThreadPoolExecutor for parallel processing with progress bar
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        # Submit all tasks
-        futures = {executor.submit(get_historical_bounds, sid): sid for sid in station_ids}
-
-        # Collect results with progress bar
-        observation_bounds = []
-        for future in tqdm(
-            concurrent.futures.as_completed(futures),
-            total=len(station_ids),
-            desc="Fetching station metadata",
-            unit="station"
-        ):
-            observation_bounds.append(future.result())
-
-    return observation_bounds
-
-
-def get_buoy_metadata() -> pd.DataFrame:
-    """
-    Fetch metadata for all NDBC buoy stations.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame containing station metadata including location, observation bounds,
-        and other station information. Index is station_id.
-    """
-    # Load the station data, skip the first row, and replace NaN with a space
     stations = pd.read_csv(
-        "https://www.ndbc.noaa.gov/data/stations/station_table.txt",
+        NDBC_STATION_TABLE_URL,
         sep="|",
-        na_values=""
+        na_values="",
     ).iloc[1:].fillna(" ")
 
-    # Rename the first column to 'station_id'
     stations.rename(columns={stations.columns[0]: "station_id"}, inplace=True)
+    stations = stations.rename(columns=lambda x: x.strip())
+    stations["station_id"] = stations["station_id"].astype(str).str.strip().str.lower()
 
-    # Filter stations to only include buoys
+    # Keep the package's existing "buoy station" behavior.
     stations = stations[stations.iloc[:, 2].str.lower().str.contains("buoy")]
-
-    # Extract station IDs and convert them to strings
-    station_id = stations.iloc[:, 0].astype(str).tolist()
-
-    # Fetch observation bounds for all stations
-    observation_bounds = fetch_station_historical_bounds(station_id)
-
-    # Convert the list of dicts into a single dict
-    observation_bounds_dict = {k: v for d in observation_bounds for k, v in d.items()}
-
-    # Create a DataFrame, filter out stations with NaN bounds
-    observation_bounds_df = pd.DataFrame(observation_bounds_dict).dropna(axis=1)
-
-    # Filter the stations DataFrame to include only stations with valid bounds
-    stations_filt = stations[stations['station_id'].isin(observation_bounds_df.columns)]
-
-    # Reshape the bounds DataFrame and merge it with the filtered stations DataFrame
-    observation_bounds_filt = (
-        observation_bounds_df.T
-        .reset_index()
-        .rename(columns={"index": "station_id", 0: "min_year", 1: "max_year"})
-    )
-
-    # Set station_id as the index for merging
-    stations_filt.set_index("station_id", inplace=True)
-    observation_bounds_filt.set_index("station_id", inplace=True)
-
-    # Merge the filtered stations with their corresponding observation bounds
-    stations_filt = stations_filt.merge(observation_bounds_filt, left_index=True, right_index=True)
-    stations_filt = stations_filt.rename(columns=lambda x: x.strip())
-
-    return stations_filt
+    return stations.set_index("station_id").to_xarray()
 
 
-def get_buoy_stations(data_format: str = "xarray") -> Union[pd.DataFrame, 'xr.Dataset']:
+def get_buoy_stations() -> xr.Dataset:
     """
-    Get a simplified dataset of buoy station information.
-
-    Parameters
-    ----------
-    data_format : str, optional
-        Format of returned data. Either "xarray" (default) or "pandas".
+    Get simplified buoy station information.
 
     Returns
     -------
-    xr.Dataset or pd.DataFrame
-        Dataset containing station locations (latitude, longitude), time bounds
-        (min_year, max_year), and notes.
+    xr.Dataset
+        Station locations and notes.
     """
-    bmetadata = get_buoy_metadata()
+    bmetadata = get_buoy_metadata().to_dataframe()
 
-    # Create simplified station dataset
-    buoy_stations = bmetadata[["min_year", "max_year"]].astype(float)
-    buoy_stations['notes'] = bmetadata['NOTE']
+    buoy_stations = pd.DataFrame(index=bmetadata.index.astype(str))
+    buoy_stations["notes"] = bmetadata["NOTE"]
     buoy_stations["latitude"] = bmetadata["LOCATION"].apply(
         lambda x: _get_latitude(x.split()[0], x.split()[1])
     )
     buoy_stations["longitude"] = bmetadata["LOCATION"].apply(
         lambda x: _get_longitude(x.split()[2], x.split()[3])
     )
-    buoy_stations.index = buoy_stations.index.astype(str)
 
-    if data_format == "xarray":
-        return buoy_stations.to_xarray()
-    else:
-        return buoy_stations
+    return buoy_stations.to_xarray()
+
+
+def get_historical_bounds(station_id: str):
+    """
+    Return first and last available stdmet years for backward compatibility.
+    """
+    from .data_retrieval import list_available
+
+    available = list_available(mode="stdmet").to_dataframe()
+    years = available.loc[available["station_id"] == str(station_id).lower(), "year"]
+    if years.empty:
+        return {station_id: (pd.NA, pd.NA)}
+    return {station_id: (str(years.min()), str(years.max()))}
+
+
+def fetch_station_historical_bounds(station_ids: list[str]):
+    """
+    Return historical stdmet bounds for multiple stations.
+
+    This compatibility helper derives bounds from the stdmet directory index
+    instead of scraping each station history page.
+    """
+    from .data_retrieval import list_available
+
+    available = list_available(mode="stdmet").to_dataframe()
+    grouped = available.groupby("station_id")["year"].agg(["min", "max"])
+    bounds = []
+    for station_id in station_ids:
+        key = str(station_id).lower()
+        if key in grouped.index:
+            row = grouped.loc[key]
+            bounds.append({station_id: (str(row["min"]), str(row["max"]))})
+        else:
+            bounds.append({station_id: (pd.NA, pd.NA)})
+    return bounds

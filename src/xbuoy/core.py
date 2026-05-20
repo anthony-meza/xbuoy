@@ -6,7 +6,6 @@ into easy-to-use interfaces for common workflows.
 """
 
 import xarray as xr
-import pandas as pd
 from typing import List, Union, Optional
 
 from .geographic_filters import box_filter_buoys
@@ -14,8 +13,7 @@ from .geographic_filters import box_filter_buoys
 
 def list_stations(
     region: Optional[dict] = None,
-    data_format: str = "xarray"
-) -> Union[xr.Dataset, pd.DataFrame]:
+) -> xr.Dataset:
     """
     Get a list of all available NDBC buoy stations with their metadata.
 
@@ -25,14 +23,10 @@ def list_stations(
         Geographic bounding box to filter stations. Should contain keys:
         'lon_min', 'lon_max', 'lat_min', 'lat_max'.
         If None, returns all stations globally.
-    data_format : str, optional
-        Format of returned data: "xarray" (default) or "pandas".
-
     Returns
     -------
-    xr.Dataset or pd.DataFrame
-        Dataset containing station locations (latitude, longitude),
-        time bounds (min_year, max_year), and notes.
+    xr.Dataset
+        Dataset containing station locations (latitude, longitude) and notes.
 
     Examples
     --------
@@ -46,10 +40,10 @@ def list_stations(
     """
     from .station_metadata import get_buoy_stations as _get_stations_metadata
 
-    stations = _get_stations_metadata(data_format=data_format)
+    stations = _get_stations_metadata()
 
     # Apply geographic filter if specified
-    if region is not None and data_format == "xarray":
+    if region is not None:
         stations = box_filter_buoys(
             stations,
             lon1=region.get('lon_min', -180),
@@ -61,14 +55,36 @@ def list_stations(
     return stations
 
 
+def list_available(mode: Optional[str] = "stdmet") -> xr.Dataset:
+    """
+    List available NDBC historical files.
+
+    Parameters
+    ----------
+    mode : str, optional
+        Historical data mode to list. Use None to list all modes.
+
+    Returns
+    -------
+    xr.Dataset
+        Availability dataset with one row per historical file.
+    """
+    from .data_retrieval import list_available as _list_available
+
+    return _list_available(mode=mode)
+
+
 def fetch_data(
     station_ids: Union[str, List[str]],
-    years: Union[int, List[int]],
+    years: Optional[Union[int, List[int]]] = None,
     sample_rate: str = "D",
-    add_location: bool = True
+    add_location: bool = True,
+    data_type: str = "historical",
+    mode: Union[str, List[str]] = "stdmet",
+    max_workers: int = 6,
 ) -> xr.Dataset:
     """
-    Fetch historical buoy data for specified stations and years.
+    Fetch historical or realtime buoy data for specified stations.
 
     This is the main function for retrieving buoy observational data. It handles
     data download and optionally adds location coordinates.
@@ -77,13 +93,20 @@ def fetch_data(
     ----------
     station_ids : str or list of str
         Station ID(s) to fetch data for. Can be a single station ID or a list.
-    years : int or list of int
+    years : int or list of int, optional
         Year(s) to fetch data for. Can be a single year or a list/range.
+        Required for historical data and ignored for realtime data.
     sample_rate : str, optional
         Temporal resampling rate (default: "D" for daily).
         Options: "D" (daily), "W" (weekly), "M" (monthly), "H" (hourly).
     add_location : bool, optional
         Whether to add latitude/longitude coordinates to the dataset (default: True).
+    data_type : {"historical", "realtime"}, optional
+        Which NDBC feed to retrieve. Historical data is the default.
+    mode : str or list of str, optional
+        Which NDBC data mode(s) to retrieve (default is "stdmet").
+    max_workers : int, optional
+        Maximum number of concurrent file reads per station.
 
     Returns
     -------
@@ -104,6 +127,9 @@ def fetch_data(
     Fetch with weekly averaging:
     >>> data = xbuoy.fetch_data("tplm2", 2020, sample_rate="W")
 
+    Fetch realtime data:
+    >>> data = xbuoy.fetch_data("tplm2", data_type="realtime", sample_rate="H")
+
     Compute coverage after fetching:
     >>> data = xbuoy.fetch_data("tplm2", range(2015, 2021))
     >>> data = xbuoy.compute_data_coverage(data, variable="WTMP")
@@ -115,22 +141,32 @@ def fetch_data(
     # Normalize inputs to lists
     if isinstance(station_ids, str):
         station_ids = [station_ids]
-    if isinstance(years, int):
-        years = [years]
-    elif isinstance(years, range):
-        years = list(years)
+    station_ids = [str(station_id).lower() for station_id in station_ids]
+    data_type = data_type.lower()
+    if isinstance(mode, str):
+        mode = mode.lower()
+    else:
+        mode = [m.lower() for m in mode]
+    if years is not None:
+        if isinstance(years, int):
+            years = [years]
+        elif isinstance(years, range):
+            years = list(years)
 
     # Fetch the data
     dataset = _fetch_records(
         station_list=station_ids,
         years=years,
         sample_rate=sample_rate,
-        debugging=False
+        debugging=False,
+        data_type=data_type,
+        mode=mode,
+        max_workers=max_workers,
     )
 
     # Add location coordinates if requested
     if add_location:
-        reference_stations = _get_stations_metadata(data_format="xarray")
+        reference_stations = _get_stations_metadata()
         dataset = add_latitude_longitude(dataset, reference_stations)
 
     return dataset

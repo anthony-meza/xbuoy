@@ -13,7 +13,8 @@ authors = [
   {name = "Anthony Meza"},
 ]
 dependencies = [
-  "ndbc-api>=0.24.8.31.1",
+  "numpy>=2.0.0",
+  "pandas>=2.2.0",
   "xarray>=2024.9.0",
   "cartopy>=0.24.1",
   "matplotlib>=3.9.2",
@@ -24,6 +25,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0.0",
+  "nbclient>=0.10.0",
+  "nbformat>=5.10.0",
+  "ipykernel>=6.29.0",
 ]
 
 [tool.setuptools]

@@ -25,17 +25,24 @@ class TestCoreAPI:
         assert isinstance(stations, xr.Dataset)
         assert "latitude" in stations.data_vars
         assert "longitude" in stations.data_vars
-        assert "min_year" in stations.data_vars
-        assert "max_year" in stations.data_vars
         assert len(stations.station_id) > 0
 
-    def test_list_stations_pandas(self):
-        """Test listing stations as pandas DataFrame."""
-        stations = xbuoy.list_stations(data_format="pandas")
+    def test_list_available(self):
+        """Test listing historical file availability."""
+        available = xbuoy.list_available(mode="stdmet")
 
-        assert isinstance(stations, pd.DataFrame)
-        assert "latitude" in stations.columns
-        assert "longitude" in stations.columns
+        assert isinstance(available, xr.Dataset)
+        assert {"station_id", "mode", "year", "url"}.issubset(available.data_vars)
+        assert available.sizes["file"] > 0
+        assert (available["mode"] == "stdmet").all()
+
+    def test_list_stations_is_xarray_only(self):
+        """Test station listing always returns an xarray Dataset."""
+        stations = xbuoy.list_stations()
+
+        assert isinstance(stations, xr.Dataset)
+        assert "latitude" in stations.data_vars
+        assert "longitude" in stations.data_vars
 
     def test_list_stations_with_region(self):
         """Test listing stations filtered by region."""
@@ -82,14 +89,14 @@ class TestStationMetadata:
         """Test fetching detailed buoy metadata."""
         metadata = station_metadata.get_buoy_metadata()
 
-        assert isinstance(metadata, pd.DataFrame)
-        assert len(metadata) > 0
-        assert "min_year" in metadata.columns
-        assert "max_year" in metadata.columns
+        assert isinstance(metadata, xr.Dataset)
+        assert metadata.sizes["station_id"] > 0
+        assert "LOCATION" in metadata.data_vars
+        assert "NOTE" in metadata.data_vars
 
     def test_get_buoy_stations(self):
         """Test getting simplified station information."""
-        stations = station_metadata.get_buoy_stations(data_format="xarray")
+        stations = station_metadata.get_buoy_stations()
 
         assert isinstance(stations, xr.Dataset)
         assert "latitude" in stations.data_vars

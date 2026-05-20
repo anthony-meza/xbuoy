@@ -7,6 +7,7 @@ except PackageNotFoundError:
 
 from .core import (
     list_stations,
+    list_available,
     fetch_data,
     filter_by_region,
 )
@@ -31,7 +32,12 @@ from .station_metadata import (
 
 from .data_retrieval import (
     extract_historical_year,
+    extract_realtime,
+    historical_index,
+    historical_mode_index,
+    historical_modes,
     get_station_records,
+    read_ndbc_raw,
 )
 
 from .data_processing import (
@@ -46,6 +52,7 @@ from .geographic_filters import (
 
 __all__ = [
     "list_stations",       # Get station metadata
+    "list_available",      # List historical file availability
     "fetch_data",          # Download buoy data
     "filter_by_region",    # Filter to geographic region
     "plot_stations",       # Plot station locations on map
@@ -54,7 +61,12 @@ __all__ = [
     "get_historical_bounds",
     "fetch_station_historical_bounds",
     "extract_historical_year",
+    "extract_realtime",
+    "historical_index",
+    "historical_mode_index",
+    "historical_modes",
     "get_station_records",
+    "read_ndbc_raw",
     "add_latitude_longitude",
     "add_variable_coverage",
     "compute_data_coverage",

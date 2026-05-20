@@ -29,6 +29,9 @@ import xbuoy
 # List all available buoy stations
 stations = xbuoy.list_stations()
 
+# List available historical standard meteorological files
+available = xbuoy.list_available(mode="stdmet")
+
 # Filter to a specific region (e.g., Caribbean)
 caribbean = xbuoy.list_stations(
     region={'lon_min': -85, 'lon_max': -60, 'lat_min': 10, 'lat_max': 25}

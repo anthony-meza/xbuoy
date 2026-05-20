@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 import xbuoy
-from xbuoy import data_processing, geographic_filters
+from xbuoy import data_processing, data_retrieval, geographic_filters
 
 
 class TestPackageStructure:
@@ -22,6 +22,7 @@ class TestPackageStructure:
     def test_core_functions_available(self):
         """Test that core API functions are available at package level."""
         assert hasattr(xbuoy, "list_stations")
+        assert hasattr(xbuoy, "list_available")
         assert hasattr(xbuoy, "fetch_data")
         assert hasattr(xbuoy, "filter_by_region")
         assert hasattr(xbuoy, "plot_stations")
@@ -90,6 +91,95 @@ class TestDataProcessing:
         assert "longitude" in result.data_vars
         assert result["latitude"].sel(station_id="A").values == 40.0
         assert result["longitude"].sel(station_id="B").values == -72.0
+
+
+class TestNdbcParsingWorkflows:
+    """Test representative NDBC table-to-xarray conversions."""
+
+    def test_stdmet_table_becomes_time_dataset(self):
+        body = """
+#YY MM DD hh mm WDIR WSPD WTMP
+#yr mo dy hr mn degT m/s degC
+20 01 01 00 00 180 5.0 20.1
+20 01 01 01 00 190 6.0 MM
+"""
+        table = data_retrieval._read_ndbc_table_from_text(body, mode="stdmet")
+        ds = data_retrieval._observation_dataset(table, mode="stdmet", sample_rate="H")
+
+        assert set(["WDIR", "WSPD", "WTMP"]).issubset(ds.data_vars)
+        assert ds.sizes["time"] == 2
+        assert np.isnan(ds["WTMP"].isel(time=1).item())
+
+    def test_legacy_stdmet_header_becomes_time_dataset(self):
+        body = """
+YY MM DD hh WD WSPD GST WVHT DPD APD MWD BAR ATMP WTMP
+98 01 01 00 180 5.0 6.0 1.0 10.0 7.0 270 1010.0 12.0 13.0
+98 01 01 01 190 6.0 7.0 1.2 11.0 7.5 280 1011.0 12.5 13.2
+"""
+        table = data_retrieval._read_ndbc_table_from_text(body, mode="stdmet")
+        ds = data_retrieval._observation_dataset(table, mode="stdmet", sample_rate="D")
+
+        assert {"WD", "WSPD", "WTMP"}.issubset(ds.data_vars)
+        assert ds.sizes["time"] == 1
+        assert ds["WTMP"].isel(time=0).item() == 13.1
+
+    def test_adcp_table_becomes_depth_bin_dataset(self):
+        body = """
+#YY MM DD hh mm DEP01 DIR01 SPD01 DEP02 DIR02 SPD02
+#yr mo dy hr mn m deg cm/s m deg cm/s
+20 01 01 00 00 5 180 10 10 190 20
+20 01 01 01 00 5 181 11 10 191 21
+"""
+        table = data_retrieval._read_ndbc_table_from_text(body, mode="adcp")
+        ds = data_retrieval._observation_dataset(table, mode="adcp", sample_rate="H")
+
+        assert set(["DEP", "DIR", "SPD"]).issubset(ds.data_vars)
+        assert ds.sizes["time"] == 2
+        assert ds.sizes["depth_bin"] == 2
+        assert ds["SPD"].sel(depth_bin=2).isel(time=1).item() == 21
+
+    def test_spectral_table_becomes_frequency_dataset(self):
+        body = """
+#YY MM DD hh mm .0200 .0325 .0375
+#yr mo dy hr mn Hz Hz Hz
+2020 01 01 00 00 1.0 2.0 3.0
+2020 01 01 01 00 1.5 2.5 3.5
+"""
+        table = data_retrieval._read_ndbc_table_from_text(body, mode="swden")
+        ds = data_retrieval._observation_dataset(table, mode="swden", sample_rate="H")
+
+        assert "swden" in ds.data_vars
+        assert ds.sizes["frequency"] == 3
+        assert ds["swden"].sel(frequency=0.0325).isel(time=0).item() == 2.0
+
+    def test_fetch_data_can_merge_multiple_modes(self, monkeypatch):
+        def fake_extract_historical_year(yr, station_id, sample_rate, mode, display_error=False):
+            time = pd.date_range(f"{yr}-01-01", periods=2, freq="h")
+            if mode == "stdmet":
+                return xr.Dataset({"WTMP": ("time", [20.0, 21.0])}, coords={"time": time})
+            if mode == "swden":
+                return xr.Dataset(
+                    {"swden": (("time", "frequency"), [[1.0, 2.0], [1.5, 2.5]])},
+                    coords={"time": time, "frequency": [0.02, 0.0325]},
+                )
+            return xr.Dataset()
+
+        monkeypatch.setattr(
+            data_retrieval,
+            "extract_historical_year",
+            fake_extract_historical_year,
+        )
+
+        ds = xbuoy.fetch_data(
+            "41001",
+            years=2020,
+            mode=["stdmet", "swden"],
+            add_location=False,
+        )
+
+        assert {"WTMP", "swden"}.issubset(ds.data_vars)
+        assert ds.sizes["station_id"] == 1
+        assert ds.sizes["frequency"] == 2
 
 
 class TestGeographicFilters:
