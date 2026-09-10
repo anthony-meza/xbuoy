@@ -30,6 +30,7 @@ html_static_path = ["docs/_static"]
 html_css_files = ["custom.css"]
 html_theme_options = {
     "github_url": "https://github.com/anthony-meza/xndbc",
+    "navbar_center": ["top-nav.html"],
     "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "navbar_persistent": ["search-button"],
     "show_nav_level": 2,

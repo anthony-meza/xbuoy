@@ -100,6 +100,13 @@ def test_site_examples_navigation_and_no_downloads(tmp_path):
         "wave_spectra",
     ]
     home = BeautifulSoup((output / "index.html").read_text(), "html.parser")
+    header = home.select_one("#pst-header")
+    assert header is not None
+    for doc in ("user_guide", "api", "notes"):
+        assert header.select_one(f'a[href="docs/{doc}.html"]')
+    assert not header.select(
+        'a[href="docs/examples.html"], a[href^="examples/"]'
+    )
     sidebar = home.select_one(".bd-sidebar-primary")
     assert sidebar is not None
     assert sidebar.select_one('a[href="docs/examples.html"]')
