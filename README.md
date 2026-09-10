@@ -70,7 +70,8 @@ From a local checkout:
 conda env create -f docs/environment.yml
 conda activate xndbc-dev
 pytest -q
-sphinx-build -W --keep-going -b html . docs/_build/html
+rm -rf docs/_build
+sphinx-build -E -W --keep-going -b html . docs/_build/html
 test -s docs/_build/html/index.html
 ```
 
@@ -78,7 +79,7 @@ Open `docs/_build/html/index.html` to preview the website.
 
 CI checks the code, executes notebooks against offline fixtures, and builds the
 website. API pages come from code docstrings; product and variable tables
-come from code; notebooks appear automatically in the download gallery.
+come from code; notebooks appear as rendered pages in the website’s Examples section.
 See [development notes](docs/notes.rst) for the documentation workflow.
 
 Issues and pull requests with reproducible examples are welcome. Keep discussions

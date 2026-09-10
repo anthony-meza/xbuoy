@@ -7,6 +7,7 @@ From the repository root, with the development environment activated:
 
    pytest -q
    pytest -q -m integration
+   rm -rf docs/_build
    sphinx-build -E -W --keep-going -b html . docs/_build/html
    test -s docs/_build/html/index.html
 
@@ -30,14 +31,14 @@ Edit each piece of information at its source:
 * Public signatures and API descriptions belong in Python docstrings. Sphinx
   discovers public members and renders them in :doc:`api`, with source links.
 * Products and variable metadata belong in ``src/xndbc/_products.py`` and
-  ``src/xndbc/_variables.py``. :doc:`reference` renders those definitions directly.
+  ``src/xndbc/_variables.py``. :doc:`api` renders those definitions directly.
 * Tutorials belong in ``examples/*.ipynb``. Give each notebook a descriptive
   first Markdown heading and an introduction. Add each tutorial to the table of
-  contents in the root ``index.rst`` and link it from ``docs/examples.rst``.
+  contents in ``docs/examples.rst``.
   The website renders and executes notebooks;
   pytest also executes every notebook against offline fixtures.
 * The website homepage belongs in the repository-root ``index.rst``;
-  ``docs/user_guide.rst`` indexes the notebook pages, installation, and reference.
+  ``docs/user_guide.rst`` links to Examples, installation, and the API reference.
 * Walkthrough explanations belong alongside executable cells in
   ``examples/*.ipynb``. Do not create separate RST versions of notebook topics.
   RST is reserved for navigation, installation, reference, and development notes.
@@ -54,8 +55,9 @@ and build settings to be enabled in that service.
 Read the Docs automatically builds and publishes the documentation on pushes
 when its GitHub integration is enabled. No local notebook execution or manual
 build is needed. MyST-NB executes every tutorial against live NOAA services,
-even when the source notebook already contains outputs, and saves the executed
-notebooks under ``_executed/`` in the HTML build alongside rendered outputs.
+even when the source notebook already contains outputs, and renders their code,
+tables, and plots as navigable pages in Examples.
+Notebook files and source downloads are not published.
 It does not update notebooks in Git.
 Execution uses temporary working directories, so tutorial exports do not modify
 the source tree. Each cell has a 300-second timeout; execution errors fail the
@@ -72,6 +74,7 @@ The Read the Docs project must have its GitHub webhook enabled and the desired
 branch active with automatic builds enabled. These are service settings, not
 settings that ``.readthedocs.yaml`` can enable. GitHub Actions also builds tutorials
 on pushes to main and pull requests, retaining the HTML as a review artifact.
-For an optional local preview, use the clean build command above; ``-E`` ensures
-all sources are processed again. Notebook pages also refresh automatically on
-incremental builds.
+For an optional local preview, use the clean build commands above. Removing the
+output directory prevents retired pages from surviving; ``-E`` ensures all sources
+are processed again. Notebook pages also refresh automatically on incremental
+builds.

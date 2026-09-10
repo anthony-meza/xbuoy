@@ -30,7 +30,7 @@ analyze your data.
 
       Look up functions, arguments, and dataset helpers.
 
-   .. grid-item-card:: Tutorials
+   .. grid-item-card:: Examples
       :link: docs/examples
       :link-type: doc
 
@@ -70,11 +70,5 @@ and interpreting download reports, continue with :doc:`/examples/getting_started
 
    User guide <docs/user_guide>
    API reference <docs/api>
-   Getting started <examples/getting_started>
-   Finding stations <examples/finding_stations>
-   Historical analysis <examples/historical_analysis>
-   Realtime observations <examples/realtime_observations>
-   Wind <examples/wind_speed_direction>
-   Current profiles <examples/current_profiles>
-   Wave spectra <examples/wave_spectra>
+   Examples <docs/examples>
    Development <docs/notes>

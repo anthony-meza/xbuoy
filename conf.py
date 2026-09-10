@@ -35,7 +35,10 @@ html_theme_options = {
     "show_nav_level": 2,
     "secondary_sidebar_items": ["page-toc"],
 }
-html_sidebars = {"index": [], "**": ["sidebar-nav-bs"]}
+templates_path = ["docs/_templates"]
+html_sidebars = {"**": ["site-nav.html"]}
+html_copy_source = False
+html_show_sourcelink = False
 
 autodoc_member_order = "bysource"
 
