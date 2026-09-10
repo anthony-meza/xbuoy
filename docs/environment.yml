@@ -2,20 +2,22 @@ name: xndbc-dev
 channels:
   - conda-forge
 dependencies:
-  - python>=3.10,<3.13
+  - python=3.14
   - pip
-  - numpy>=2.0.0
-  - pandas>=2.2.0
+  - numpy>=2.3.3
+  - pandas>=2.3.3
   - xarray>=2024.9.0
-  - matplotlib>=3.9.2
+  - matplotlib>=3.9.2,<3.11
   - cartopy>=0.24.1
   - tqdm>=4.66.0
   - pytest>=8.0.0
   - nbclient>=0.10.0
   - nbformat>=5.10.0
   - ipykernel>=6.29.0
+  - scipy
+  - jupyterlab
   - sphinx
-  - nbsphinx
   - sphinx-rtd-theme
+  # The editable install below also installs xarray[complete] from pyproject.toml.
   - pip:
       - -e ..[dev]

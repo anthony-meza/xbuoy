@@ -4,29 +4,31 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xndbc"
-version = "0.1.0"
+version = "0.2.0"
 description = "A package to aggregate buoy data into xarray objects"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
   {name = "Anthony Meza"},
 ]
 dependencies = [
-  "numpy>=2.0.0",
-  "pandas>=2.2.0",
-  "xarray>=2024.9.0",
+  "numpy>=2.3.3",
+  "pandas>=2.3.3",
+  "xarray[complete]>=2024.9.0",
   "tqdm>=4.66.0",
+  # Cartopy map rendering: https://github.com/SciTools/cartopy/issues/2682
+  "matplotlib>=3.9.2,<3.11",
+  "cartopy>=0.24.1",
 ]
 
 [project.optional-dependencies]
+test = ["pytest>=8.0.0"]
 dev = [
   "pytest>=8.0.0",
   "nbclient>=0.10.0",
   "nbformat>=5.10.0",
   "ipykernel>=6.29.0",
-  "matplotlib>=3.9.2",
-  "cartopy>=0.24.1",
 ]
 
 [tool.setuptools]
@@ -36,6 +38,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
+addopts = "-m 'not integration'"
 markers = [
   "integration: tests that require live network access and external services",
 ]

@@ -1,0 +1,10 @@
+# STATION_ID | OWNER | TTYPE | HULL | NAME | PAYLOAD | LOCATION | TIMEZONE | FORECAST | NOTE
+#
+44013|NDBC|Buoy||Boston buoy||42.346 N 70.651 W|E||<b>Boston</b> harbor
+41043|NDBC|Buoy||Caribbean buoy||21.0 N 65.0 W|E||
+46001|NDBC|Buoy||Pacific east||30.0 N 175.0 E|E||
+46002|NDBC|Buoy||Pacific west||30.0 N 175.0 W|E||
+bzbm3|NOAA|Weather Station||Buzzards Bay||41.5 N 70.7 W|E||
+46254|SCRIPPS|Buoy||Scripps||32.87 N 117.3 W|P||
+vakf1|NOAA|Weather Station||Virginia Key||25.73 N 80.16 W|E||
+unknown|NOAA|Buoy||Unknown location|||E||

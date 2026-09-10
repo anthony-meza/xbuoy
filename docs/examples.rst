@@ -1,19 +1,13 @@
-Examples
-========
+Notebook downloads
+==================
 
-The example notebooks are in the repository's ``examples/`` directory.
+Use these notebooks to experiment locally with the workflows in the user guide.
+Each download is a standalone Jupyter notebook, with its own imports and data
+selection. For a continuous introduction on this website, begin with
+:doc:`quickstart`, then continue to :doc:`discovery` and :doc:`downloads`.
 
-.. toctree::
-   :maxdepth: 1
+Create the development environment described in :doc:`installation`, start
+``jupyter lab``, and open a downloaded notebook. Run its cells in order. Downloads
+use NOAA services; saved observations reflect their stated retrieval date.
 
-   ../examples/getting_started
-   ../examples/california_buoys_example
-   ../examples/realtime_woods_hole_scripps
-
-To run the notebooks locally:
-
-.. code-block:: bash
-
-   conda env create -f docs/environment.yml
-   conda activate xndbc-dev
-   jupyter lab
+.. notebook-gallery::
