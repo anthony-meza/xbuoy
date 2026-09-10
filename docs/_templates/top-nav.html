@@ -1,0 +1,12 @@
+{# Tutorials remain in the left sidebar; the header keeps the documentation tabs. #}
+<nav aria-label="Main navigation">
+  <ul class="bd-navbar-elements navbar-nav">
+    {% for doc, title in [("docs/user_guide", "User guide"),
+                          ("docs/api", "API reference"),
+                          ("docs/notes", "Development")] %}
+      <li class="nav-item{% if pagename == doc %} current active{% endif %}">
+        <a class="nav-link" href="{{ pathto(doc) }}"{% if pagename == doc %} aria-current="page"{% endif %}>{{ title }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+</nav>
