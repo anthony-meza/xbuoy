@@ -2,7 +2,7 @@ API reference
 =============
 
 For the complete workflow begin with
-:doc:`quickstart`; see :doc:`data_status` for archive availability and measurement
+:doc:`/examples/getting_started`; see :doc:`/examples/historical_analysis` for archive availability and measurement
 coverage, and :doc:`reference` for products and variable units.
 
 Stations and observations

@@ -13,7 +13,7 @@ analyze your data.
    :class-container: homepage-links
 
    .. grid-item-card:: Quickstart
-      :link: docs/quickstart
+      :link: examples/getting_started
       :link-type: doc
 
       Choose stations and download your first observations.
@@ -30,11 +30,11 @@ analyze your data.
 
       Look up functions, arguments, and dataset helpers.
 
-   .. grid-item-card:: Notebook downloads
+   .. grid-item-card:: Tutorials
       :link: docs/examples
       :link-type: doc
 
-      Explore runnable examples in Jupyter.
+      Read worked examples with code, tables, and plots.
 
 Install
 -------
@@ -62,7 +62,7 @@ Download historical observations for buoy 44013 and plot daily water temperature
    daily.plot.line(x="time", hue="station_id")
 
 Downloads use NOAA services. For regional station selection, realtime data,
-and interpreting download reports, continue with :doc:`docs/quickstart`.
+and interpreting download reports, continue with :doc:`/examples/getting_started`.
 
 .. toctree::
    :hidden:
@@ -70,5 +70,11 @@ and interpreting download reports, continue with :doc:`docs/quickstart`.
 
    User guide <docs/user_guide>
    API reference <docs/api>
-   Examples <docs/examples>
+   Getting started <examples/getting_started>
+   Finding stations <examples/finding_stations>
+   Historical analysis <examples/historical_analysis>
+   Realtime observations <examples/realtime_observations>
+   Wind <examples/wind_speed_direction>
+   Current profiles <examples/current_profiles>
+   Wave spectra <examples/wave_spectra>
    Development <docs/notes>

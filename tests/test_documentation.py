@@ -1,0 +1,83 @@
+"""Check notebook publication and refresh behavior with a small real Sphinx build."""
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+import nbformat
+import pytest
+
+pytest.importorskip("myst_nb")
+pytest.importorskip("sphinx")
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def build_project(tmp_path, code):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "conf.py").write_text(
+        f"import sys\nsys.path.insert(0, {str(ROOT / 'docs' / '_ext')!r})\n"
+        "extensions = ['myst_nb', 'notebook_outputs']\n"
+        "nb_execution_mode = 'force'\n"
+        "nb_execution_in_temp = True\n"
+        "nb_execution_raise_on_error = True\n"
+        "nb_execution_timeout = 30\n"
+    )
+    (source / "index.rst").write_text("Tutorials\n=========\n\n.. toctree::\n\n   example\n")
+    notebook = nbformat.v4.new_notebook(
+        cells=[nbformat.v4.new_markdown_cell("# Example"), nbformat.v4.new_code_cell(code)],
+        metadata={"kernelspec": {"name": "python3", "display_name": "Python 3", "language": "python"}},
+    )
+    notebook.cells[1].execution_count = 99
+    notebook.cells[1].outputs = [nbformat.v4.new_output("stream", name="stdout", text="STALE OUTPUT")]
+    nbformat.write(notebook, source / "example.ipynb")
+    kernel = tmp_path / "jupyter" / "kernels" / "python3"
+    kernel.mkdir(parents=True)
+    (kernel / "kernel.json").write_text(json.dumps({
+        "argv": [sys.executable, "-m", "ipykernel_launcher", "-f", "{connection_file}"],
+        "display_name": "Python 3", "language": "python",
+    }))
+    env = {**os.environ, "JUPYTER_PATH": str(tmp_path / "jupyter")}
+    output = tmp_path / "build" / "html"
+
+    def build():
+        return subprocess.run(
+            [sys.executable, "-m", "sphinx", "-T", "-W", "-b", "html", str(source), str(output)],
+            capture_output=True, text=True, env=env, timeout=90,
+        )
+
+    return source, output, build
+
+
+def test_notebooks_refresh_and_publish_without_changing_source(tmp_path):
+    counter = tmp_path / "counter"
+    source, output, build = build_project(tmp_path, f"""
+from pathlib import Path
+counter = Path({str(counter)!r})
+count = int(counter.read_text()) + 1 if counter.exists() else 1
+counter.write_text(str(count))
+Path('tutorial-export.txt').write_text('temporary output')
+print(f'Fresh execution {{count}}')
+""")
+    original = (source / "example.ipynb").read_bytes()
+    for expected in (1, 2):
+        result = build()
+        assert result.returncode == 0, result.stdout + result.stderr
+        executed = nbformat.read(output / "_executed" / "example.ipynb", as_version=4)
+        assert f"Fresh execution {expected}" in executed.cells[1].outputs[0].text
+        html = (output / "example.html").read_text()
+        assert f"Fresh execution {expected}" in html
+        assert "STALE OUTPUT" not in html
+        assert (source / "example.ipynb").read_bytes() == original
+        assert not (source / "tutorial-export.txt").exists()
+
+
+def test_execution_error_fails_build(tmp_path):
+    _, output, build = build_project(tmp_path, "raise RuntimeError('execution failed deliberately')")
+    result = build()
+    assert result.returncode != 0
+    assert "execution failed deliberately" in result.stdout + result.stderr
+    assert not (output / "_executed").exists()

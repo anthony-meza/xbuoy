@@ -1,13 +1,21 @@
-Notebook downloads
-==================
+:orphan:
 
-Use these notebooks to experiment locally with the workflows in the user guide.
-Each download is a standalone Jupyter notebook, with its own imports and data
-selection. For a continuous introduction on this website, begin with
-:doc:`quickstart`, then continue to :doc:`discovery` and :doc:`downloads`.
+Tutorials
+=========
 
-Create the development environment described in :doc:`installation`, start
-``jupyter lab``, and open a downloaded notebook. Run its cells in order. Downloads
-use NOAA services; saved observations reflect their stated retrieval date.
+Read these notebooks directly on this website, including their code, tables,
+and plots. Read the Docs executes them against NOAA services during each build
+and publishes the results automatically. Execution timestamps are shown in the
+notebooks; realtime observations reflect the feed available during that build.
 
-.. notebook-gallery::
+Begin with Getting Started, then explore discovery, historical and realtime
+observations, or a specific measurement product. See :doc:`installation` if you
+also want to run the notebooks locally.
+
+* :doc:`/examples/getting_started`
+* :doc:`/examples/finding_stations`
+* :doc:`/examples/historical_analysis`
+* :doc:`/examples/realtime_observations`
+* :doc:`/examples/wind_speed_direction`
+* :doc:`/examples/current_profiles`
+* :doc:`/examples/wave_spectra`

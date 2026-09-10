@@ -1,3 +1,5 @@
 sphinx
 pydata-sphinx-theme
 sphinx-design
+myst-nb>=1.3,<2
+ipykernel>=6.29.0
