@@ -2,7 +2,7 @@
 
 [![Documentation](https://readthedocs.org/projects/xndbc/badge/?version=latest)](https://xndbc.readthedocs.io/en/latest/)
 
-**NOAA buoy observations, in xarray.** Choose stations, download historical or
+**NOAA's National Data Buoy Center observations, in xarray.** Choose stations, download historical or
 realtime observations, and analyze weather, waves, and currents with ordinary
 `xarray.Dataset` objects.
 
