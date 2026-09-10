@@ -90,7 +90,15 @@ def test_adcp_reconstructed_headers_and_units():
     assert "units" not in parse_observation_table(mismatched, "adcp").attrs
 
 
-def test_coverage_counts_empty_bins_and_preserves_dimensions():
+@pytest.fixture(params=[False, True], ids=["standard", "flox"])
+def coverage_engine(request):
+    if request.param:
+        import flox  # noqa: F401 -- require the acceleration installed by xarray[complete]
+    with xr.set_options(use_flox=request.param):
+        yield
+
+
+def test_coverage_counts_empty_bins_and_preserves_dimensions(coverage_engine):
     ds = xr.Dataset(
         {"WTMP": (("station_id", "time"), [[1, 2], [np.nan, 2]])},
         coords={
@@ -111,7 +119,7 @@ def test_coverage_counts_empty_bins_and_preserves_dimensions():
     )
 
 
-def test_coverage_partial_bins_duplicates_and_empty_time():
+def test_coverage_partial_bins_duplicates_and_empty_time(coverage_engine):
     ds = xr.Dataset(
         {"WTMP": ("time", [1, 2, 3])},
         coords={
@@ -132,6 +140,19 @@ def test_coverage_partial_bins_duplicates_and_empty_time():
         ds.ndbc.coverage("0h")
     with pytest.raises(ValueError):
         ds.ndbc.coverage("D", start="2021", end="2020")
+
+
+def test_coverage_missing_samples_and_zero_values(coverage_engine):
+    ds = xr.Dataset(
+        {"WTMP": ("time", [np.nan, 0.0, np.nan])},
+        coords={"time": np.array(
+            ["2020-01-01T00:00", "2020-01-01T12:00", "2020-01-03T00:00"],
+            dtype="datetime64[ns]",
+        )},
+    )
+    # Zero is a real measurement; both absent days and all-missing days are empty.
+    np.testing.assert_allclose(ds.ndbc.coverage("D").WTMP, 100 / 3)
+    assert ds.where(ds.WTMP != 0).ndbc.coverage("D").WTMP.item() == 0
 
 
 def test_map_layouts_without_coastline_download(monkeypatch):

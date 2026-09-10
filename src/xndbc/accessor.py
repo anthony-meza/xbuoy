@@ -76,11 +76,12 @@ class NDBCAccessor:
                 [selected.time.values.astype("datetime64[ns]"), [start, end]]
             )
         )
-        presence = (
-            selected[time_variables].notnull().reindex(time=grid, fill_value=False)
+        # Numeric flags preserve empty bins as NaN with both resampling engines.
+        presence = xr.where(selected[time_variables].notnull(), 1.0, np.nan).reindex(
+            time=grid
         )
         try:
-            occupied_bins = presence.resample(time=freq).max().fillna(False)
+            occupied_bins = presence.resample(time=freq).max(skipna=True).fillna(0)
         except (ValueError, TypeError, ZeroDivisionError) as error:
             raise ValueError(f"Invalid coverage frequency {freq!r}: {error}") from error
         result = occupied_bins.mean("time") * 100
