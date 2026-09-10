@@ -32,6 +32,8 @@ jobs:
           python-version: '3.14'
       - run: python -m pip install -e . -r docs/requirements.txt
       - run: sphinx-build -W --keep-going -b html . docs/_build/html
+      - name: Check documentation homepage
+        run: test -s docs/_build/html/index.html
       - uses: actions/upload-artifact@v4
         with:
           name: documentation-html

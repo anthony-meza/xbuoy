@@ -71,7 +71,10 @@ conda env create -f docs/environment.yml
 conda activate xndbc-dev
 pytest -q
 sphinx-build -W --keep-going -b html . docs/_build/html
+test -s docs/_build/html/index.html
 ```
+
+Open `docs/_build/html/index.html` to preview the website.
 
 CI checks the code, executes notebooks against offline fixtures, and builds the
 website. API pages come from code docstrings; product and variable tables

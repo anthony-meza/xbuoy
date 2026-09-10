@@ -17,7 +17,8 @@ dependencies:
   - scipy
   - jupyterlab
   - sphinx
-  - sphinx-rtd-theme
+  - pydata-sphinx-theme
+  - sphinx-design
   # The editable install below also installs xarray[complete] from pyproject.toml.
   - pip:
       - -e ..[dev]
