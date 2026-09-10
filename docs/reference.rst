@@ -4,7 +4,7 @@ Products and variables
 These tables are generated from the same definitions used by the downloads and
 parser on every documentation build. Product support does not guarantee files
 or measurements at a particular station. Inspect ``xndbc.list_modes()`` and
-``xndbc.stations.availability()`` when choosing a download.
+``stations.ndbc.availability()`` when choosing a download.
 
 Supported products
 ------------------

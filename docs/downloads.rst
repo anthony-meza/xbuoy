@@ -1,7 +1,7 @@
 Retrieving observations
 =======================
 
-Once you have station IDs, choose a product and time source. Historical requests
+Once you have a station selection or known IDs, choose a product and time source. Historical requests
 select archive years; realtime requests use the window currently published by
 NOAA. Both return observations at their original timestamps.
 
@@ -12,10 +12,11 @@ Historical and realtime data
 
    import xndbc
 
-   historical = xndbc.fetch_historical("44013", years=[2020, 2021])
-   recent = xndbc.fetch_realtime("44013")
+   historical = xndbc.historical("44013", years=[2020, 2021])
+   recent = xndbc.realtime("44013")
 
-IDs can be strings, iterables, or scalar or one-dimensional xarray DataArrays.
+Pass station datasets directly, or supply IDs as strings, iterables, or scalar
+or one-dimensional xarray DataArrays.
 Even a single station retains its ``station_id`` dimension. Different station
 time axes align to their union, with missing values where observations do not
 coincide. The downloader does not interpolate or average them.
@@ -29,8 +30,8 @@ historical/realtime support. For example:
 
 .. code-block:: python
 
-   profiles = xndbc.fetch_historical("41051", years=2013, mode="adcp")
-   spectra = xndbc.fetch_historical("41018", years=1996, mode="swden")
+   profiles = xndbc.historical("41051", years=2013, mode="adcp")
+   spectra = xndbc.historical("41018", years=1996, mode="swden")
 
 Products have different dimensions: profiles add ``depth_bin`` and spectra add
 ``frequency``. See :doc:`datasets` before selecting or reducing those dimensions.
@@ -51,3 +52,6 @@ attribute describes unsuccessful requests as an xarray dataset.
 Reports describe the original request, including after selecting observations.
 A successful file download does not guarantee complete measurements. Continue
 with :doc:`datasets` to interpret missing values, measure coverage, and export.
+
+See :doc:`data_status` for the distinction between archive availability, retrieval
+success, and measurement coverage.

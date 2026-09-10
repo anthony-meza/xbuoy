@@ -10,11 +10,24 @@ LOCATION = re.compile(r"([\d.]+)\s*([NS])\s+([\d.]+)\s*([EW])")
 
 
 def _plain_text(value):
+    """Remove HTML tags and decode entities in a station metadata field."""
     return " ".join(unescape(re.sub(r"<[^>]+>", " ", value)).split())
 
 
 def parse_station_table(body: str) -> xr.Dataset:
-    """Parse pipe-delimited records; missing locations remain NaN."""
+    """Parse NOAA station metadata and geographic coordinates.
+
+    Args:
+        body: Pipe-delimited NOAA station catalog text.
+
+    Returns:
+        An xarray Dataset indexed by station_id, with location coordinates in
+        degrees and descriptive text fields. Missing or unrecognized locations
+        remain NaN; HTML markup is removed from descriptive fields.
+
+    Raises:
+        ValueError: If no station records can be parsed.
+    """
     rows = {}
     for line in body.splitlines():
         if line.startswith("#") or "|" not in line:

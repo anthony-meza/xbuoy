@@ -1,40 +1,58 @@
 First observations
-==========================
+==================
 
-Download one station
-----------------------------
+Choose stations
+---------------
+
+Select a region by its latitude and longitude bounds. The result contains
+station IDs, locations, and descriptive metadata:
 
 .. code-block:: python
 
    import xndbc
 
-   data = xndbc.fetch_historical("44013", years=2020)
-   data                       # Ordinary xarray.Dataset
-   data.ndbc.report()         # Download status, including failures
+   region = {"north": 43, "south": 42, "west": -71, "east": -70}
+   stations = xndbc.stations(bounds=region)
+   stations
 
-A successful single-station request still has a ``station_id`` dimension. Data
-remain at their original observation times. Variable attributes provide units
-and descriptions; times are UTC.
+Download observations
+---------------------
 
-Select, average, and plot explicitly
---------------------------------------------
+Pass the station dataset directly to a download function:
 
 .. code-block:: python
 
-   temperature = data.WTMP.sel(station_id="44013")
-   daily = temperature.resample(time="D").mean(keep_attrs=True)
-   daily.plot.line(x="time")
+   data = xndbc.historical(stations, years=2020)
+   data
 
-Use native xarray plotting for time series. Use a map for spatial questions:
+The result has ``station_id`` and ``time`` dimensions, original UTC timestamps,
+and measurement attributes containing units and descriptions. Failed individual
+files produce a warning when other downloads succeed. Inspect their outcomes
+with ``data.ndbc.report()``; see :doc:`downloads` for failure handling.
+
+Analyze with xarray
+-------------------
 
 .. code-block:: python
 
-   xndbc.stations.plot_map(data)
+   daily = data.WTMP.resample(time="D").mean(keep_attrs=True)
+   daily.plot.line(x="time", hue="station_id")
 
-Continue through the user guide
--------------------------------
+The download retains original observations. Resampling explicitly creates daily
+water-temperature averages. Directional variables require circular or vector
+averaging, explained in :doc:`wind`.
 
-Use :doc:`discovery` to build a station selection and :doc:`downloads` to choose
-products and handle download outcomes. :doc:`datasets` explains dimensions,
-missing data, coverage, and export. For directional measurements, continue to
-:doc:`wind` before averaging.
+Known stations and realtime observations
+----------------------------------------
+
+Discovery is optional when you already know the IDs:
+
+.. code-block:: python
+
+   data = xndbc.historical("44013", years=2020)
+   recent = xndbc.realtime(stations)
+   two_stations = xndbc.realtime(["44013", "41043"])
+
+A single station still retains its station dimension. NOAA determines the
+realtime window. Continue with :doc:`discovery` for station selections and maps,
+then :doc:`downloads` for products and retrieval outcomes.

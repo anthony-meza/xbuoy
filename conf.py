@@ -18,3 +18,6 @@ exclude_patterns = ["docs/_build", ".git", ".pytest_cache", "**/__pycache__", "*
 html_theme = "sphinx_rtd_theme"
 
 autodoc_member_order = "bysource"
+
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False

@@ -1,8 +1,8 @@
 Understanding datasets and plots
-========================================
+================================
 
 Dimensions and coordinates
-----------------------------------
+--------------------------
 
 * Station catalogs use ``station_id`` and retain names, owners, types, and notes.
 * Availability uses ``station_id`` and ``year`` with ``available`` and ``url``
@@ -26,7 +26,7 @@ Definitions are based on
 `NOAA measurement descriptions <https://www.ndbc.noaa.gov/faq/measdes.shtml>`_.
 
 Choose a plot for the question
---------------------------------------
+------------------------------
 
 A station map shows positions; it works with one or many stations. Colored maps
 require one value per station. Select a time or reduce explicitly:
@@ -34,9 +34,9 @@ require one value per station. Select a time or reduce explicitly:
 .. code-block:: python
 
    snapshot = data.sel(time="2020-01-01T00:00:00")
-   xndbc.stations.plot_map(snapshot, variable="WTMP")
+   snapshot.ndbc.plot_map(variable="WTMP")
    mean_temperature = data[["WTMP"]].mean("time", keep_attrs=True)
-   xndbc.stations.plot_map(mean_temperature, variable="WTMP")
+   mean_temperature.ndbc.plot_map(variable="WTMP")
 
 The map displays points without spatial interpolation. Stations with missing
 values are gray; missing locations are omitted with a warning. Scalar station
@@ -60,7 +60,7 @@ Use small overlays for a few stations and heatmaps or explicit facets for larger
 selections. Select depth or frequency before making a simple time series.
 
 Sampling and coverage
------------------------------
+---------------------
 
 Fetching preserves original timestamps. Explicitly average scalar variables:
 
@@ -72,7 +72,8 @@ Directions require circular or vector averaging. See :doc:`wind` for wind
 conventions, missing and calm observations, and the difference between mean
 speed and the magnitude of a mean vector.
 
-Coverage requires a frequency and counts bins with at least one nonmissing
+See :doc:`data_status` for archive availability, download reports, and a worked
+measurement-coverage example. Coverage requires a frequency and counts bins with at least one nonmissing
 observation. Bins with no observations count against the denominator. Explicit
 start/end boundaries include bins outside the downloaded observation range:
 
@@ -87,7 +88,7 @@ Coverage is not native sample completeness: one valid sample can fill a daily
 bin. Calculate coverage before averaging to retain this interpretation.
 
 Failures, caching, and export
--------------------------------------
+-----------------------------
 
 Partial downloads return successful stations and emit one summarized warning.
 Inspect ``data.ndbc.report()`` for unavailable or failed requests. Failed stations

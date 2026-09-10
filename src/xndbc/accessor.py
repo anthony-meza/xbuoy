@@ -1,4 +1,4 @@
-"""Two buoy-specific additions to ordinary xarray datasets."""
+"""Station maps, archive availability, and diagnostics for xarray datasets."""
 
 import json
 
@@ -10,39 +10,105 @@ from .core import REPORT_ATTRIBUTE, _report_dataset
 
 @xr.register_dataset_accessor("ndbc")
 class NDBCAccessor:
-    """Coverage and retrieval diagnostics; selection and plotting stay in xarray."""
+    """Station maps, archive availability, measurement coverage, and download reports."""
 
     def __init__(self, dataset):
+        """Bind station and observation helpers to an xarray dataset."""
         self._obj = dataset
 
-    def report(self) -> xr.Dataset:
-        """Return original per-file download outcomes, including failed files.
+    def plot_map(self, variable=None, *, ax=None, labels="auto"):
+        """Plot this dataset's station locations.
 
-        The report describes the original request even after selecting/subsetting
-        the observations. Datasets without download provenance return an empty
-        report. Records survive NetCDF export in a JSON string attribute.
+        Args:
+            variable: Optional measurement used to color stations. Select or
+                reduce time, depth, and frequency to one value per station first.
+            ax: Existing Cartopy axes, or None to create a map.
+            labels: Whether to label IDs; "auto" labels at most ten stations.
+
+        Returns:
+            A Matplotlib (figure, axes) pair. Missing measurements appear gray;
+            stations with missing coordinates are omitted with a warning.
+
+        Raises:
+            ValueError: If station coordinates or measurement dimensions are invalid.
+
+        Coastline data may be downloaded by Cartopy on first use.
+        """
+        from ._plotting import plot_station_map
+
+        return plot_station_map(self._obj, variable, ax=ax, labels=labels)
+
+    def availability(self, years=None, *, mode="stdmet", refresh=False):
+        """Inspect archive file availability for this dataset's station IDs.
+
+        Args:
+            years: Archive year or iterable of years. None includes all indexed years.
+            mode: NOAA product, defaulting to standard meteorological observations.
+            refresh: Reload NOAA archive indexes and current station metadata
+                instead of reusing the copies cached in memory.
+
+        Returns:
+            An xarray Dataset with station_id and year dimensions, boolean
+            available flags, and file URLs. Missing files have False and an
+            empty URL. Coordinates describe current station locations.
+
+        Raises:
+            ValueError: If IDs, years, or the historical product are invalid.
+            TypeError: If station IDs or years have unsupported types.
+
+        This reads NOAA indexes, not observation files. A listed file does not
+        guarantee valid measurements. Download observations to calculate
+        measurement coverage with coverage(); inspect report() for outcomes.
+        """
+        from ._stations import _normalize_station_ids, availability
+
+        return availability(
+            _normalize_station_ids(self._obj), years=years, mode=mode, refresh=refresh
+        )
+
+    def report(self) -> xr.Dataset:
+        """Return the original download outcomes without accessing NOAA.
+
+        Returns:
+            An xarray Dataset indexed by request, with station_id, year, url, status,
+            and error variables. Realtime years are missing. Datasets without download
+            provenance return an empty report.
+
+        The report remains tied to the original request after observation selection.
+        A successful file can still contain missing measurements; use coverage() to
+        assess those. Report provenance survives NetCDF export as a JSON attribute.
         """
         return _report_dataset(json.loads(self._obj.attrs.get(REPORT_ATTRIBUTE, "[]")))
 
     def coverage(self, freq, start=None, end=None) -> xr.Dataset:
-        """Percentage of time bins containing at least one valid observation.
+        """Calculate measurement coverage as the percentage of occupied time bins.
 
-        Parameters
-        ----------
-        freq : str
-            Explicit xarray resampling frequency, for example 'D', 'h', or 'ME'.
-        start, end : datetime-like, optional
-            Inclusive UTC window. Defaults to the dataset's first and last
-            timestamps. A date such as '2020-12-31' means midnight; specify the
-            final time of day when the entire last day is intended.
+        Args:
+            freq: Explicit bin frequency such as "D", "h", or "ME".
+            start: Inclusive UTC window start; defaults to the earliest observation.
+            end: Inclusive UTC window end; defaults to the latest observation. A date
+                without a time means midnight at the beginning of that day.
 
-        Returns
-        -------
-        xarray.Dataset
-            Original variable names with percent units. Empty bins count against
-            coverage, including bins outside the observed range when a wider
-            window is supplied. Station, frequency, and depth dimensions survive.
-            This measures occupied bins, not expected native sampling completeness.
+        Returns:
+            An xarray Dataset with the original measurement names and percent units.
+            Station, depth, and frequency dimensions survive; time is reduced. Each
+            bin with at least one nonmissing value counts once. Empty bins, including
+            those outside the observation range, remain in the denominator.
+
+        Raises:
+            ValueError: If frequency, boundaries, or time coordinates are invalid, or
+                an empty time coordinate lacks explicit start and end boundaries.
+            TypeError: If time is not represented by datetime64 timestamps.
+
+        This operates on loaded observations without network access. It measures
+        occupied bins, not expected native sample completeness or archive file presence.
+        Calculate it before averaging. Two occupied days in a three-day window give
+        66.7 percent coverage, even if each occupied day has only one measurement.
+
+        Examples:
+            >>> coverage = data[["WSPD"]].ndbc.coverage(
+            ...     "D", start="2020-01-01", end="2020-12-31T23:59:59"
+            ... )
         """
         dataset = self._obj
         if not isinstance(freq, str) or not freq.strip():

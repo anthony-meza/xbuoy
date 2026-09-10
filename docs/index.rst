@@ -19,6 +19,7 @@ in Jupyter, download a notebook from :doc:`examples`.
    quickstart
    discovery
    downloads
+   data_status
    datasets
    wind
 
@@ -34,5 +35,4 @@ in Jupyter, download a notebook from :doc:`examples`.
    :caption: Project
    :maxdepth: 1
 
-   migration
    notes

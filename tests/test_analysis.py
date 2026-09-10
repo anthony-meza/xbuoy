@@ -175,7 +175,7 @@ def test_map_layouts_without_coastline_download(monkeypatch):
         },
     )
     for subset in (ds, ds.sel(station_id="a"), ds.isel(station_id=slice(0, 0))):
-        fig, ax = xndbc.stations.plot_map(subset, "WTMP")
+        fig, ax = subset.ndbc.plot_map("WTMP")
         from io import BytesIO
 
         output = BytesIO()
@@ -184,12 +184,12 @@ def test_map_layouts_without_coastline_download(monkeypatch):
         # Regression: incompatible Cartopy/Matplotlib rendered only the colorbar.
         assert plt.imread(output, format="png").shape[1] > 200
         plt.close(fig)
-    fig, ax = xndbc.stations.plot_map(ds)
+    fig, ax = ds.ndbc.plot_map()
     assert np.ptp(ax.get_xlim()) < 30
     plt.close(fig)
     with pytest.raises(ValueError, match="one value per station"):
-        xndbc.stations.plot_map(ds.expand_dims(time=[0]), "WTMP")
+        ds.expand_dims(time=[0]).ndbc.plot_map("WTMP")
     missing = ds.assign_coords(latitude=("station_id", [np.nan, np.nan]))
     with pytest.warns(UserWarning, match="Omitted 2"):
-        fig, ax = xndbc.stations.plot_map(missing)
+        fig, ax = missing.ndbc.plot_map()
     plt.close(fig)

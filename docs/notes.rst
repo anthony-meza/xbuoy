@@ -1,8 +1,5 @@
 Development notes
-=========================
-
-Version 0.2 is a development release with a redesigned public API. See
-:doc:`migration` before upgrading existing scripts.
+=================
 
 From the repository root, with the development environment activated:
 

@@ -19,7 +19,7 @@ Inspect original observations
    import numpy as np
    import xndbc
 
-   data = xndbc.fetch_historical("44013", years=2020)
+   data = xndbc.historical("44013", years=2020)
    wind = data[["WSPD", "GST", "WDIR"]].sel(station_id="44013")
    wind.WSPD.plot.line(x="time")
 

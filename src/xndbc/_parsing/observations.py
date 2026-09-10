@@ -28,7 +28,20 @@ SPECTRAL_VALUES = re.compile(r"(?:\S+\s+\([\d.]+\)\s*)+")
 
 
 def parse_observation_table(body: str, mode: str = "stdmet") -> pd.DataFrame:
-    """Read a NOAA table, preserving text fields and variable-specific missing values."""
+    """Parse NOAA text into a pandas table with measurement-specific NaNs.
+
+    Args:
+        body: Downloaded NOAA observation text.
+        mode: Validated product code, default "stdmet".
+
+    Returns:
+        A DataFrame containing timestamp fields and measurements, with header units
+        in attrs when aligned. Text markers and verified numeric sentinels become
+        NaN. Legitimate numbers such as 99-degree directions remain unchanged.
+
+    Raises:
+        ValueError: If headers, row widths, numeric fields, or spectral pairs are malformed.
+    """
     lines = [line.strip() for line in body.splitlines() if line.strip()]
     headers = [line.lstrip("#").split() for line in lines if line.startswith("#")]
     rows = [line for line in lines if not line.startswith("#")]
@@ -123,6 +136,11 @@ def _parse_regular_table(rows, column_names, layout):
 
 
 def _index_by_time(frame: pd.DataFrame) -> pd.DataFrame:
+    """Build a UTC timestamp index from NOAA calendar fields.
+
+    Two-digit years use NDBC’s 1970 cutoff; absent hour/minute fields default to zero.
+    Invalid calendar fields raise ValueError; no observation resampling is performed.
+    """
     frame = frame.rename(columns=TIME_COLUMN_NAMES)
     frame = frame.assign(
         minute=frame.get("minute", 0),
@@ -142,7 +160,19 @@ def _index_by_time(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def table_to_dataset(frame: pd.DataFrame, mode: str) -> xr.Dataset:
-    """Return original-resolution observations with labeled dimensions."""
+    """Convert a parsed table into original-resolution xarray observations.
+
+    Args:
+        frame: Parsed NOAA table including timestamp fields and optional header units.
+        mode: Validated product code selecting table, ADCP, or spectral layout.
+
+    Returns:
+        An xarray Dataset indexed by UTC time, with depth_bin for ADCP or frequency
+        for spectra. Missing measurements remain NaN; attributes describe units.
+
+    Raises:
+        ValueError: If timestamps or the required depth/frequency columns are invalid.
+    """
     header_units = frame.attrs.get("units", {})
     frame = _index_by_time(frame)
     if MODES[mode].layout == "adcp":

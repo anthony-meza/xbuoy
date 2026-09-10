@@ -1,5 +1,5 @@
 Installation
-====================
+============
 
 Python 3.12–3.14 is tested. Use Python 3.14 for a new development environment.
 
@@ -17,7 +17,7 @@ Matplotlib is constrained below 3.11 because of a verified
 Maps may download Cartopy coastline data on their first use.
 
 Development and notebooks
----------------------------------
+-------------------------
 
 From the repository root:
 
@@ -32,7 +32,7 @@ The environment includes plotting, notebook execution, SciPy, and Sphinx.
 Run ``pytest -q -m integration`` to explicitly request tests against live NOAA.
 
 Python 3.14 free threading
-----------------------------------
+--------------------------
 
 Standard Python 3.14 is the default. Its optional free-threaded build is tested
 separately through the manually triggered CI workflow. This does not guarantee

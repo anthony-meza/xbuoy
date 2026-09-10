@@ -9,10 +9,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class VariableMetadata:
-    """Meaning, units, and NOAA missing-value marker for one measurement.
+    """Describe one measurement's units and numeric missing marker.
 
-    missing_value=None means no numeric sentinel is replaced. Text markers such
-    as MM are handled separately by the table parser.
+    Attributes:
+        long_name: Human-readable measurement description.
+        units: Units attached to the xarray variable.
+        missing_value: Numeric sentinel to replace with NaN, or None to preserve
+            all numeric values. Text missing markers are handled by the parser.
     """
 
     long_name: str
@@ -104,6 +107,16 @@ VARIABLES = {
 
 
 def annotate(dataset, header_units=None):
+    """Attach measurement and coordinate metadata in place.
+
+    Args:
+        dataset: Parsed observations with a time coordinate.
+        header_units: Optional mapping of NOAA column names to source units.
+
+    Returns:
+        The same dataset. Known definitions take precedence; unknown variables
+        retain supplied header units when available.
+    """
     for name, variable in dataset.data_vars.items():
         if name in VARIABLES:
             definition = VARIABLES[name]

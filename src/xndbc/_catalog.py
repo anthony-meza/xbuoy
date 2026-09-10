@@ -16,7 +16,20 @@ STATION_TABLE_URL = "https://www.ndbc.noaa.gov/data/stations/station_table.txt"
 # Enough for the supported products, while keeping arbitrary internal calls bounded.
 @lru_cache(maxsize=16)
 def historical_file_index(mode: str) -> xr.Dataset:
-    """Return sorted station/year file presence; the last duplicate link wins."""
+    """Read and cache a product's NOAA archive index.
+
+    Args:
+        mode: Validated historical product code used in the archive directory URL.
+
+    Returns:
+        An xarray Dataset indexed by station_id and year, containing boolean
+        available flags and URLs. Missing combinations are False and empty strings.
+        The last duplicate link wins. This cached dataset must not be mutated;
+        callers copy it or construct selections before modifying results.
+
+    Raises:
+        OSError: If the NOAA directory listing cannot be downloaded.
+    """
     root = f"{HISTORICAL_ROOT}/{mode}/"
     rows = []
     for filename in re.findall(r'href="([^"/]+\.txt\.gz)"', _http.read_noaa_text(root)):
@@ -55,6 +68,7 @@ def historical_file_index(mode: str) -> xr.Dataset:
 
 @lru_cache(maxsize=1)
 def _station_catalog() -> xr.Dataset:
+    """Download and parse the station catalog once per cache lifetime."""
     dataset = parse_station_table(_http.read_noaa_text(STATION_TABLE_URL))
     dataset.attrs["source"] = STATION_TABLE_URL
     return dataset

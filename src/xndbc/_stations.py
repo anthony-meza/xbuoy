@@ -13,7 +13,22 @@ from ._products import validate_mode
 
 
 def _normalize_station_ids(values):
-    """Accept scalar or iterable IDs, normalize case, and retain first-seen order."""
+    """Normalize dataset or array IDs into unique strings in first-seen order.
+
+    Args:
+        values: Dataset with station_id coordinates, string, iterable, or DataArray.
+
+    Returns:
+        Nonempty lowercase station ID strings with surrounding whitespace removed.
+
+    Raises:
+        ValueError: If coordinates are absent, IDs are empty, multidimensional, or invalid.
+        TypeError: If any ID is not a string.
+    """
+    if isinstance(values, xr.Dataset):
+        if "station_id" not in values.coords:
+            raise ValueError("Station datasets require a station_id coordinate")
+        values = values.station_id
     if isinstance(values, xr.DataArray):
         values = values.values
     if isinstance(values, np.ndarray) and values.ndim == 0:
@@ -35,7 +50,12 @@ def _normalize_station_ids(values):
 
 
 def _normalize_years(values):
-    """Accept scalar or iterable integer years and return sorted unique values."""
+    """Normalize integer archive years into a sorted, unique list.
+
+    Raises:
+        TypeError: If years are not integers; booleans are not years.
+        ValueError: If the selection is empty or years are not four-digit values.
+    """
     if isinstance(values, xr.DataArray):
         values = values.values
     if isinstance(values, np.ndarray) and values.ndim == 0:
@@ -88,6 +108,10 @@ def _validate_bounds(bounds):
 
 
 def _filter_bounds(dataset, bounds):
+    """Select stations inside validated bounds, preserving variable dtypes.
+
+    Unknown coordinates fail the mask; west greater than east crosses the dateline.
+    """
     if bounds is None:
         return dataset
     west, south, east, north = bounds
@@ -102,47 +126,47 @@ def _filter_bounds(dataset, bounds):
     return dataset.isel(station_id=mask)
 
 
-def search(station_ids=None, *, query=None, bounds=None, refresh=False) -> xr.Dataset:
-    """Find stations by IDs, text, or geographic bounds.
+def stations(station_ids=None, *, bounds=None, refresh=False) -> xr.Dataset:
+    """Find stations by geographic bounds or known IDs.
 
-    Parameters
-    ----------
-    station_ids : str, iterable of str, or xarray.DataArray, optional
-        Limit the catalog to these IDs. Unknown IDs are omitted.
-    query : str, optional
-        Case-insensitive literal substring of station ID, name, owner, or type.
-    bounds : mapping of str to float, optional
-        Dictionary with exactly north, south, west, east keys, in degrees.
-        Key order does not matter. West > east crosses the dateline.
-    refresh : bool, default False
-        Refresh the in-memory station catalog from NOAA.
+    Args:
+        station_ids: Optional ID string, iterable of strings, or ID DataArray.
+            Unknown IDs are omitted; None includes all catalog stations.
+        bounds: Optional dictionary with north, south, west, and east in degrees.
+            West greater than east crosses the antimeridian. Combined with IDs,
+            both filters apply. Unknown locations cannot match geographic bounds.
+        refresh: Reload NOAA's catalog instead of using its in-memory cached copy.
 
-    Returns
-    -------
-    xarray.Dataset
-        Metadata along station_id with latitude/longitude coordinates. Positions
-        describe the current catalog, not necessarily historical deployment sites.
+    Returns:
+        An xarray Dataset indexed by station_id, with latitude/longitude coordinates
+        and name, owner, station_type, and notes. Locations describe the current
+        catalog, not necessarily historical deployments. No matches returns an
+        empty dataset. Pass the result directly to historical() or realtime().
+
+    Raises:
+        ValueError: If IDs or geographic bounds are invalid.
+        TypeError: If IDs are not strings.
+        OSError: If the station catalog cannot be retrieved from NOAA.
+
+    Examples:
+        >>> selected = xndbc.stations(["44013", "41043"])
+        >>> data = xndbc.historical(selected, years=2020)
     """
     ids = _normalize_station_ids(station_ids) if station_ids is not None else None
     bounds = _validate_bounds(bounds)
-    if query is not None and not isinstance(query, str):
-        raise TypeError("query must be a string")
     dataset = get_stations(refresh=refresh)
     if ids is not None:
         dataset = dataset.sel(
             station_id=[s for s in ids if s in dataset.station_id.values]
         )
-    if query is not None:
-        needle = query.strip().casefold()
-        matches = xr.zeros_like(dataset.station_id, dtype=bool)
-        for name in ("station_id", "name", "owner", "station_type"):
-            text = dataset[name].astype(str)
-            matches |= text.str.casefold().str.contains(needle, regex=False)
-        dataset = dataset.isel(station_id=matches)
     return _filter_bounds(dataset, bounds)
 
 
 def _attach_metadata(dataset, metadata):
+    """Attach current catalog coordinates and descriptive fields by station ID.
+
+    Missing catalogs or unknown IDs retain NaN coordinates. Returns a new dataset.
+    """
     if metadata is None:
         return dataset.assign_coords(
             latitude=("station_id", np.full(dataset.sizes["station_id"], np.nan)),
@@ -159,29 +183,28 @@ def _attach_metadata(dataset, metadata):
 def availability(
     station_ids=None, *, years=None, mode="stdmet", bounds=None, refresh=False
 ) -> xr.Dataset:
-    """Return historical file presence along station_id and year.
+    """Read historical archive file presence, optionally filtered by IDs and bounds.
 
-    Parameters
-    ----------
-    station_ids : str, iterable of str, or xarray.DataArray, optional
-        Requested IDs. Absent IDs have available=False and an empty URL.
-    years : int, iterable of int, or xarray.DataArray, optional
-        Requested years. Defaults to years represented in the archive index.
-    mode : str, default "stdmet"
-        Historical product; see xndbc.list_modes().
-    bounds : mapping of str to float, optional
-        Dictionary with exactly north, south, west, east keys, in degrees.
-        Key order does not matter. West > east crosses the dateline.
-        Requires known station coordinates.
-    refresh : bool, default False
-        Refresh archive indexes and station metadata.
+    Args:
+        station_ids: Optional station selection; absent files retain requested IDs.
+        years: Optional year selection; None includes every indexed year.
+        mode: Historical product code, default "stdmet".
+        bounds: Optional named geographic bounds; requires known station locations.
+        refresh: Reload archive indexes and current catalog instead of cached copies.
 
-    Returns
-    -------
-    xarray.Dataset
-        Boolean available and string url variables. Presence means a file exists,
-        not that every measurement or time interval is populated. Archive-only
-        stations remain in results with missing metadata unless bounds exclude them.
+    Returns:
+        An xarray Dataset with station_id/year dimensions, boolean available flags,
+        and URLs. Absent files have False and an empty URL. Archive-only stations
+        retain missing metadata unless geographic filtering excludes them.
+
+    Raises:
+        ValueError: If selectors or product are invalid.
+        TypeError: If IDs or years have unsupported types.
+        RuntimeError: If bounds require station metadata that cannot be retrieved.
+        OSError: If the archive index cannot be retrieved.
+
+    Only indexes and metadata are retrieved. File presence does not measure valid
+    observations; public callers use the dataset availability() accessor.
     """
     ids = _normalize_station_ids(station_ids) if station_ids is not None else None
     years = _normalize_years(years) if years is not None else None
@@ -209,15 +232,3 @@ def availability(
             stacklevel=2,
         )
     return _filter_bounds(_attach_metadata(dataset, metadata), bounds)
-
-
-def plot_map(dataset, variable=None, *, ax=None, labels="auto"):
-    """Plot station locations, optionally colored by one value per station.
-
-    Accepts catalog or observation datasets, including scalar station selections.
-    Select a time or explicitly reduce other dimensions before coloring.
-    Returns a Matplotlib ``(figure, axes)`` pair.
-    """
-    from ._plotting import plot_station_map
-
-    return plot_station_map(dataset, variable, ax=ax, labels=labels)

@@ -6,6 +6,21 @@ import numpy as np
 
 
 def plot_station_map(dataset, variable=None, *, ax=None, labels="auto"):
+    """Render station points without spatial interpolation.
+
+    Args:
+        dataset: Station or observation dataset with station_id and location coordinates.
+        variable: Optional measurement containing one value per station.
+        ax: Cartopy axes or None to create new axes.
+        labels: Boolean or "auto" to label at most ten stations.
+
+    Returns:
+        A Matplotlib (figure, axes) pair. Missing values are gray; missing locations
+        are omitted with a warning. Cartopy may download coastline resources.
+
+    Raises:
+        ValueError: If labels, coordinates, or measurement dimensions are invalid.
+    """
     import cartopy.crs as ccrs
     import cartopy.feature as cfeature
     import matplotlib.pyplot as plt

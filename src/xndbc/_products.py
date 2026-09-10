@@ -8,10 +8,13 @@ import xarray as xr
 
 @dataclass(frozen=True)
 class NDBCProduct:
-    """Describe a NOAA product's location and observation layout.
+    """Describe a product's feed locations and parser layout.
 
-    historical indicates archive support; realtime_extension=None means no
-    realtime feed. layout selects column handling, not a separate parser class.
+    Attributes:
+        description: Human-readable product description.
+        historical: Whether an archive index is supported.
+        realtime_extension: NOAA realtime suffix, or None without realtime support.
+        layout: Parser layout: table, spectrum, or adcp.
     """
 
     description: str
@@ -92,10 +95,12 @@ MODES = {
 
 
 def list_modes() -> xr.Dataset:
-    """Describe supported products along ``mode``, without accessing NOAA.
+    """Describe supported products without accessing NOAA.
 
-    ``historical`` and ``realtime`` describe product support, not availability
-    at any particular station. Use :func:`xndbc.stations.availability` for archive files.
+    Returns:
+        An xarray Dataset indexed by mode, with description and boolean historical
+        and realtime support flags. Support does not guarantee station-level files;
+        inspect a station dataset's ndbc.availability() for archive file presence.
     """
     names = list(MODES)
     products = list(MODES.values())
@@ -113,6 +118,12 @@ def list_modes() -> xr.Dataset:
 
 
 def validate_mode(mode, feed="historical"):
+    """Normalize a product code and require support for the requested feed.
+
+    Raises:
+        TypeError: If mode is not a string.
+        ValueError: If the product does not support the requested feed.
+    """
     if not isinstance(mode, str):
         raise TypeError("mode must be a string; inspect xndbc.list_modes()")
     mode = mode.strip().lower()

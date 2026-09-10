@@ -7,7 +7,8 @@ import pytest
 import xarray as xr
 
 import xndbc
-from xndbc import _catalog, _http, core, stations
+from xndbc import _catalog, _http, core
+from xndbc import _stations as stations
 from noaa_fixtures import read_fixture
 
 
@@ -22,32 +23,30 @@ def offline(monkeypatch):
 
 
 def test_search_and_dateline(offline):
-    assert stations.search(query="bOsToN").station_id.item() == "44013"
     assert set(
-        stations.search(
+        xndbc.stations(
             bounds={"north": 40, "south": 20, "west": 170, "east": -170}
         ).station_id.values
     ) == {
         "46001",
         "46002",
     }
-    assert stations.search("absent").sizes["station_id"] == 0
-    assert stations.search("44013").notes.item() == "Boston harbor"
+    assert xndbc.stations("absent").sizes["station_id"] == 0
+    assert xndbc.stations("44013").notes.item() == "Boston harbor"
 
 
-def test_availability_keeps_archive_only_and_requested_missing(offline):
-    available = stations.availability(["archive", "absent"], years=[2020, 2022])
+def test_archive_availability_for_known_unknown_and_missing_stations(offline):
+    selected = xr.Dataset(coords={"station_id": ["44013", "archive", "absent"]})
+    available = selected.ndbc.availability(years=[2020, 2022])
     assert available.available.dtype == bool
-    assert available.available.sel(station_id="archive", year=2020).item()
-    assert not available.available.sel(station_id="absent").any()
-    assert np.isnan(available.latitude.sel(station_id="archive"))
-    assert available.url.sel(station_id="absent", year=2022).item() == ""
-    assert (
-        "archive"
-        not in stations.availability(
-            bounds={"north": 50, "south": 0, "west": -80, "east": -60}
-        ).station_id.values
-    )
+    assert available.available.values.tolist() == [[True, False], [True, False], [False, False]]
+    assert (available.url.sel(year=2022) == "").all()
+    assert available.latitude.sel(station_id="44013").item() == xndbc.stations("44013").latitude.item()
+    assert np.isnan(available.latitude.sel(station_id=["archive", "absent"])).all()
+    # Geographic filtering cannot locate archive-only stations without metadata.
+    assert "archive" not in stations.availability(
+        bounds={"north": 50, "south": 0, "west": -80, "east": -60}
+    ).station_id
 
 
 def test_discovery_cache_refresh_and_mutation(offline, monkeypatch):
@@ -59,11 +58,11 @@ def test_discovery_cache_refresh_and_mutation(offline, monkeypatch):
         return read_fixture(url)
 
     monkeypatch.setattr(_http, "read_noaa_text", read)
-    first = stations.search()
+    first = xndbc.stations()
     first.latitude[:] = 0
-    assert stations.search("44013").latitude.item() != 0
+    assert xndbc.stations("44013").latitude.item() != 0
     assert len(counter) == 1
-    stations.search(refresh=True)
+    xndbc.stations(refresh=True)
     assert len(counter) == 2
     a = stations.availability()
     a.available[:] = False
@@ -84,16 +83,14 @@ def test_discovery_cache_refresh_and_mutation(offline, monkeypatch):
 
 def test_partial_and_all_unavailable(offline):
     with pytest.warns(UserWarning, match="1 of 2"):
-        data = xndbc.fetch_historical(["44013", "absent"], 2020, progress=False)
+        data = xndbc.historical(["44013", "absent"], years=2020, progress=False)
     assert data.sizes["station_id"] == 1
     assert data.ndbc.report().status.values.tolist() == ["success", "unavailable"]
     with pytest.raises(xndbc.RetrievalError) as failure:
-        xndbc.fetch_historical("absent", 2020, progress=False)
+        xndbc.historical("absent", years=2020, progress=False)
     assert failure.value.report.status.item() == "unavailable"
     with pytest.raises(xndbc.RetrievalError):
-        xndbc.fetch_historical(
-            ["44013", "absent"], 2020, errors="raise", progress=False
-        )
+        xndbc.historical(["44013", "absent"], years=2020, errors="raise", progress=False)
 
 
 def test_download_failures_are_visible(offline, monkeypatch):
@@ -102,7 +99,7 @@ def test_download_failures_are_visible(offline, monkeypatch):
 
     monkeypatch.setattr(core, "_download", broken)
     with pytest.raises(xndbc.RetrievalError, match="timed out") as failure:
-        xndbc.fetch_realtime("44013", progress=False)
+        xndbc.realtime("44013", progress=False)
     assert failure.value.report.status.item() == "failed"
     assert np.isnan(failure.value.report.year.item())
     assert "44013.txt" in failure.value.report.url.item()
@@ -114,7 +111,7 @@ def test_metadata_outage_preserves_observations(offline, monkeypatch):
 
     monkeypatch.setattr(core, "get_stations", broken)
     with pytest.warns(UserWarning, match="metadata offline"):
-        data = xndbc.fetch_historical("44013", 2020, progress=False)
+        data = xndbc.historical("44013", years=2020, progress=False)
     assert data.sizes["time"] == 3
     assert np.isnan(data.latitude.item())
     monkeypatch.setattr(stations, "get_stations", broken)
@@ -129,7 +126,6 @@ def test_metadata_outage_preserves_observations(offline, monkeypatch):
 @pytest.mark.parametrize(
     "kwargs, error",
     [
-        ({"station_ids": []}, ValueError),
         ({"years": True}, TypeError),
         ({"max_workers": 0}, ValueError),
         ({"errors": "ignore"}, ValueError),
@@ -141,9 +137,9 @@ def test_validation_precedes_network(monkeypatch, kwargs, error):
     monkeypatch.setattr(
         core, "historical_file_index", lambda *a: pytest.fail("network attempted")
     )
-    args = {"station_ids": "44013", "years": 2020, **kwargs}
+    args = {"stations": "44013", "years": 2020, **kwargs}
     with pytest.raises(error):
-        xndbc.fetch_historical(**args)
+        xndbc.historical(**args)
 
 
 @pytest.mark.parametrize(
@@ -166,7 +162,7 @@ def test_invalid_bounds(bounds):
         stations._validate_bounds(bounds)
 
 
-@pytest.mark.parametrize("discover", [stations.search, stations.availability])
+@pytest.mark.parametrize("discover", [xndbc.stations, stations.availability])
 def test_bounds_validation_precedes_network(discover, monkeypatch):
     def no_network(*args, **kwargs):
         pytest.fail("network attempted before bounds validation")
@@ -178,7 +174,7 @@ def test_bounds_validation_precedes_network(discover, monkeypatch):
 
 
 def test_bounds_key_order_and_inclusive_edges(offline):
-    station = stations.search("44013")
+    station = xndbc.stations("44013")
     bounds = {
         "north": station.latitude.item(),
         "south": station.latitude.item(),
@@ -186,16 +182,17 @@ def test_bounds_key_order_and_inclusive_edges(offline):
         "east": station.longitude.item(),
     }
     original = bounds.copy()
-    result = stations.search(bounds=bounds)
+    result = xndbc.stations(bounds=bounds)
     assert result.station_id.values.tolist() == ["44013"]
     xr.testing.assert_identical(
-        result, stations.search(bounds=dict(reversed(bounds.items())))
+        result, xndbc.stations(bounds=dict(reversed(bounds.items())))
     )
     assert bounds == original
+    assert xndbc.stations(["44013", "41043"], bounds=bounds).station_id.item() == "44013"
 
 
 def test_realtime_urls_and_netcdf_roundtrip(offline, tmp_path):
-    data = xndbc.fetch_realtime(["bzbm3", "VAKF1"], progress=False)
+    data = xndbc.realtime(["bzbm3", "VAKF1"], progress=False)
     assert data.station_id.values.tolist() == ["bzbm3", "vakf1"]
     assert {url.rsplit("/", 1)[-1] for url in data.ndbc.report().url.values} == {
         "BZBM3.txt",
@@ -215,15 +212,6 @@ def test_modes_do_not_require_network():
     assert not modes.realtime.sel(mode="adcp2")
 
 
-def test_scalar_xarray_selections_are_valid_inputs(offline):
-    available = stations.availability("44013", years=2020).sel(
-        station_id="44013", year=2020
-    )
-    data = xndbc.fetch_historical(available.station_id, available.year, progress=False)
-    assert data.sizes["station_id"] == 1
-    assert stations.search(available.station_id).station_id.item() == "44013"
-
-
 def test_historical_download_preserves_order_metadata_and_original_values(
     offline, monkeypatch
 ):
@@ -239,8 +227,8 @@ def test_historical_download_preserves_order_metadata_and_original_values(
     monkeypatch.setattr(_http, "read_noaa_text", read)
     # A deterministic valid completion order; results must still follow request order.
     monkeypatch.setattr(core, "as_completed", lambda futures: reversed(list(futures)))
-    ids = xr.DataArray([" 44013 ", "44013", "41043"], dims="station")
-    data = xndbc.fetch_historical(ids, [2020, 2021], progress=False)
+    ids = ["44013", "41043"]
+    data = xndbc.historical(ids, years=[2020, 2021], progress=False)
     assert data.station_id.values.tolist() == ["44013", "41043"]
     assert data.sizes["time"] == 3
     assert data.WTMP.isel(time=0).values.tolist() == [12, 12]
@@ -275,3 +263,68 @@ def test_archive_duplicates_and_empty_index(offline, monkeypatch):
     assert empty.station_id.dtype.kind == "U"
     assert empty.year.dtype.kind == "i"
     assert empty.url.dtype.kind == "U"
+
+
+@pytest.mark.parametrize(
+    "selection, expected",
+    [
+        (" BZBM3 ", ["bzbm3"]),
+        (["44013", "41043", "44013"], ["44013", "41043"]),
+        (xr.DataArray(["44013", "41043"]), ["44013", "41043"]),
+        (xr.DataArray("44013"), ["44013"]),
+        (xr.Dataset(coords={"station_id": ["44013", "41043"]}), ["44013", "41043"]),
+        (xr.Dataset(coords={"station_id": "44013"}), ["44013"]),
+    ],
+    ids=["string", "list", "array", "scalar_array", "dataset", "scalar_dataset"],
+)
+def test_station_input_normalization(selection, expected):
+    assert stations._normalize_station_ids(selection) == expected
+
+
+@pytest.mark.parametrize("feed", ["historical", "realtime"])
+def test_regional_download_matches_selection(offline, feed):
+    bounds = {"north": 43, "south": 42, "west": -71, "east": -70}
+    selected = xndbc.stations(bounds=bounds)
+    kwargs = {"years": xr.DataArray(2020)} if feed == "historical" else {}
+    direct = getattr(xndbc, feed)(bounds=bounds, progress=False, **kwargs)
+    explicit = getattr(xndbc, feed)(selected, progress=False, **kwargs)
+    xr.testing.assert_equal(direct, explicit)
+
+
+@pytest.mark.parametrize(
+    "selection, error",
+    [
+        (xr.Dataset({"station_id": ("row", ["44013"])}), ValueError),
+        (xr.Dataset(coords={"station_id": ("row", [])}), ValueError),
+        (xr.Dataset(coords={"station_id": (("row", "col"), [["44013"]])}), ValueError),
+        (xr.Dataset(coords={"station_id": [44013]}), TypeError),
+    ],
+    ids=["missing_coordinate", "empty", "multidimensional", "nonstring"],
+)
+def test_invalid_station_input_normalization(selection, error):
+    with pytest.raises(error):
+        stations._normalize_station_ids(selection)
+
+
+def test_station_selector_resolution(monkeypatch):
+    bounds = {"north": 0, "south": -1, "west": 0, "east": 1}
+    monkeypatch.setattr(
+        core, "discover_stations", lambda **kwargs: pytest.fail("discovery attempted")
+    )
+    with pytest.raises(ValueError, match="either stations or bounds"):
+        core._resolve_stations(None, None)
+    with pytest.raises(ValueError, match="either stations or bounds"):
+        core._resolve_stations("44013", bounds)
+    monkeypatch.setattr(
+        core, "discover_stations",
+        lambda **kwargs: xr.Dataset(coords={"station_id": ("station_id", [])}),
+    )
+    with pytest.raises(ValueError, match="one or more"):
+        core._resolve_stations(None, bounds)
+
+
+def test_removed_query_and_old_exports():
+    with pytest.raises(TypeError, match="query"):
+        xndbc.stations(query="Boston")
+    assert not hasattr(xndbc, "fetch_historical")
+    assert not hasattr(xndbc, "fetch_realtime")
