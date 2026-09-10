@@ -12,9 +12,18 @@ project = "xndbc"
 author = "Anthony Meza"
 
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon",
-              "sphinx.ext.viewcode", "sphinx_design", "reference_tables", "notebook_gallery"]
+              "sphinx.ext.viewcode", "sphinx_design", "reference_tables", "myst_nb", "notebook_outputs"]
+# Notebook pages are rendered directly alongside the reStructuredText guides.
+source_suffix = {".rst": "restructuredtext", ".ipynb": "myst-nb"}
+nb_execution_mode = "force"
+nb_execution_in_temp = True
+nb_execution_timeout = 300
+nb_execution_allow_errors = False
+nb_execution_raise_on_error = True
+nb_kernel_rgx_aliases = {".*": "python3"}
+
 root_doc = "index"
-exclude_patterns = ["docs/_build", "_build", "_readthedocs", ".git", ".pytest_cache", "**/__pycache__", "**/.ipynb_checkpoints", "build"]
+exclude_patterns = ["*.md", "**/*.md", "docs/_build", "_build", "_readthedocs", ".git", ".pytest_cache", "**/__pycache__", "**/.ipynb_checkpoints", "build"]
 html_theme = "pydata_sphinx_theme"
 html_title = "xndbc"
 html_static_path = ["docs/_static"]

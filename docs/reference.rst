@@ -22,6 +22,6 @@ no numeric sentinel is replaced for that variable.
 
 .. ndbc-reference:: variables
 
-See :doc:`datasets` for dimensions, sampling, coverage, and missing data, and
+See :doc:`/examples/historical_analysis` for dimensions, sampling, coverage, and missing data, and
 `NOAA's measurement descriptions <https://www.ndbc.noaa.gov/faq/measdes.shtml>`_
 for measurement conventions.

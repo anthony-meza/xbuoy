@@ -7,7 +7,7 @@ From the repository root, with the development environment activated:
 
    pytest -q
    pytest -q -m integration
-   sphinx-build -W --keep-going -b html . docs/_build/html
+   sphinx-build -E -W --keep-going -b html . docs/_build/html
    test -s docs/_build/html/index.html
 
 Offline tests cover scientific parsing, discovery, failures, coverage, maps,
@@ -32,12 +32,16 @@ Edit each piece of information at its source:
 * Products and variable metadata belong in ``src/xndbc/_products.py`` and
   ``src/xndbc/_variables.py``. :doc:`reference` renders those definitions directly.
 * Tutorials belong in ``examples/*.ipynb``. Give each notebook a descriptive
-  first Markdown heading and an introduction. The website lists notebook downloads
-  automatically, and pytest executes every notebook against offline fixtures.
+  first Markdown heading and an introduction. Add each tutorial to the table of
+  contents in the root ``index.rst`` and link it from ``docs/examples.rst``.
+  The website renders and executes notebooks;
+  pytest also executes every notebook against offline fixtures.
 * The website homepage belongs in the repository-root ``index.rst``;
-  ``docs/user_guide.rst`` organizes the guides. Keep existing page URLs stable.
-* Conceptual explanations belong in ``docs/*.rst``. Keep the README focused on
-  installation, a first successful download, and links to the website.
+  ``docs/user_guide.rst`` indexes the notebook pages, installation, and reference.
+* Walkthrough explanations belong alongside executable cells in
+  ``examples/*.ipynb``. Do not create separate RST versions of notebook topics.
+  RST is reserved for navigation, installation, reference, and development notes.
+  Keep the README focused on installation and links to the website.
 
 The same Sphinx configuration builds locally, in CI, and on Read the Docs.
 Pull requests build the site with warnings treated as errors; the CI artifact
@@ -47,11 +51,27 @@ to preview the site locally. Read the Docs is configured to fail on warnings
 as well. Automatic publication requires the repository's Read the Docs webhook
 and build settings to be enabled in that service.
 
-Website builds copy notebooks as downloadable files without executing them.
-The user guide is written separately in reStructuredText, with its own progression
-through discovery, downloads, and analysis.
-Before saving newly executed outputs, identify their source and retrieval date
-in the notebook; never present offline fixture outputs as real observations.
-Offline execution checks notebook code without changing the committed notebooks.
-For new products or station selections, extend ``tests/noaa_fixtures.py`` when
-needed. Run live checks explicitly when verifying upstream availability.
+Read the Docs automatically builds and publishes the documentation on pushes
+when its GitHub integration is enabled. No local notebook execution or manual
+build is needed. MyST-NB executes every tutorial against live NOAA services,
+even when the source notebook already contains outputs, and saves the executed
+notebooks under ``_executed/`` in the HTML build alongside rendered outputs.
+It does not update notebooks in Git.
+Execution uses temporary working directories, so tutorial exports do not modify
+the source tree. Each cell has a 300-second timeout; execution errors fail the
+build rather than publish incomplete results. NOAA outages can therefore require
+rebuilding after the service recovers.
+
+The website user guide links directly to the rendered tutorials. Record execution
+or retrieval time in a code cell so timestamps update with each build. Never
+present offline fixture outputs as real observations. Offline execution checks
+notebook code without changing the committed notebooks. For new products or
+station selections, extend ``tests/noaa_fixtures.py`` when needed.
+
+The Read the Docs project must have its GitHub webhook enabled and the desired
+branch active with automatic builds enabled. These are service settings, not
+settings that ``.readthedocs.yaml`` can enable. GitHub Actions also builds tutorials
+on pushes to main and pull requests, retaining the HTML as a review artifact.
+For an optional local preview, use the clean build command above; ``-E`` ensures
+all sources are processed again. Notebook pages also refresh automatically on
+incremental builds.

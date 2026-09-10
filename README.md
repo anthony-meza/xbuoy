@@ -7,7 +7,7 @@ realtime observations, and analyze weather, waves, and currents with ordinary
 `xarray.Dataset` objects.
 
 [Documentation](https://xndbc.readthedocs.io/en/latest/) ·
-[Notebook downloads](https://xndbc.readthedocs.io/en/latest/docs/examples.html) ·
+[Notebook documentation](https://xndbc.readthedocs.io/en/latest/docs/examples.html) ·
 [API reference](https://xndbc.readthedocs.io/en/latest/docs/api.html)
 
 ## Install

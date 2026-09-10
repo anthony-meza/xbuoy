@@ -30,8 +30,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.14'
-      - run: python -m pip install -e . -r docs/requirements.txt
-      - run: sphinx-build -W --keep-going -b html . docs/_build/html
+      - run: python -m pip install -e '.[dev]' -r docs/requirements.txt
+      - run: python -m pytest -q tests/test_documentation.py
+      - run: sphinx-build -E -W --keep-going -b html . docs/_build/html
       - name: Check documentation homepage
         run: test -s docs/_build/html/index.html
       - uses: actions/upload-artifact@v4
