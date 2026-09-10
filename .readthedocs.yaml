@@ -6,6 +6,7 @@ build:
     python: "miniforge3-25.11"
 
 sphinx:
+  fail_on_warning: true
   builder: html
   configuration: conf.py
 

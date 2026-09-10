@@ -1,75 +1,82 @@
 # xndbc
-[![Documentation Status](https://readthedocs.org/projects/xndbc/badge/?version=latest)](https://xndbc.readthedocs.io/en/latest/?badge=latest)
 
-> **Note:** `xndbc` is still in development. APIs, behavior, and documentation may change as the package matures.
+[![Documentation](https://readthedocs.org/projects/xndbc/badge/?version=latest)](https://xndbc.readthedocs.io/en/latest/)
 
-`xndbc` provides Python tools to pull historical and realtime data from NOAA National Data Buoy Center (NDBC) stations and load these observations into `xarray` objects to enable 
-faster analysis and data augmentation.
+**NOAA buoy observations, in xarray.** Choose stations, download historical or
+realtime observations, and analyze weather, waves, and currents with ordinary
+`xarray.Dataset` objects.
 
-<p align="center">
-  <strong>Buoy Temperature Trends (1992-2021) </strong><br>
-  <img width="585" src="https://github.com/user-attachments/assets/9a64a9b2-21a4-48b6-8452-36e5807dcc2f">
-</p>
+[Documentation](https://xndbc.readthedocs.io/en/latest/) ·
+[Notebook downloads](https://xndbc.readthedocs.io/en/latest/docs/examples.html) ·
+[API reference](https://xndbc.readthedocs.io/en/latest/docs/api.html)
 
-## Installation
+## Install
+
+Python 3.12 or newer is required; 3.12–3.14 is tested.
 
 ```bash
-pip install git+https://github.com/anthony-meza/xndbc.git@main
+pip install "xndbc @ git+https://github.com/anthony-meza/xndbc.git@main"
 ```
 
-## Quick Start
+Plotting, maps, and `xarray[complete]` are included.
+
+## Choose stations and download observations
+
+Select a region near Massachusetts, download a year of observations, and plot
+daily water temperature:
 
 ```python
 import xndbc
 
-# List all available stations
-stations = xndbc.list_available(mode=None)
+region = {"north": 43, "south": 42, "west": -71, "east": -70}
+stations = xndbc.stations(bounds=region)
+data = xndbc.historical(stations, years=2020)
 
-# List available historical standard meteorological files
-available = xndbc.list_available(mode="stdmet")
-
-# List stations in a region
-caribbean = xndbc.list_available(
-    mode=None,
-    lon_min=-85,
-    lon_max=-60,
-    lat_min=10,
-    lat_max=25,
-)
-
-# Fetch historical data for specific stations
-data = xndbc.fetch_data(
-    station_ids=["42095"],
-    years=range(2000, 2021),
-    sample_rate="D"  # Daily averages
-)
+daily = data.WTMP.resample(time="D").mean(keep_attrs=True)
+daily.plot.line(x="time", hue="station_id")
 ```
 
-The `examples/` directory contains notebooks with complete workflows for regional station searches, historical data access, realtime data, plotting, and coverage summaries.
+`stations()` returns IDs, locations, and metadata. `historical()` and `realtime()`
+return observations. All three return xarray datasets you can inspect and select.
+Downloads preserve original UTC timestamps and missing measurements; you choose
+how to average. Units and descriptions live in variable attributes.
 
-## Development
+## Already know the station—or want realtime observations?
+
+```python
+data = xndbc.historical("44013", years=2020)
+recent = xndbc.realtime(stations)
+```
+
+Both download functions accept a station dataset, an ID string, or a list of IDs.
+They also accept `bounds=region` directly. NOAA determines the realtime window.
+
+## Continue exploring
+
+Start with [getting started](examples/getting_started.ipynb), then try
+[finding stations](examples/finding_stations.ipynb) or
+[wind speed and direction](examples/wind_speed_direction.ipynb).
+The website guide explains archive availability, download reports, measurement
+coverage, product selection, and export. The
+[notebook collection](https://xndbc.readthedocs.io/en/latest/docs/examples.html)
+also covers historical comparisons, realtime observations, current profiles,
+and wave spectra. Each notebook runs independently.
+
+## Contribute
+
+From a local checkout:
 
 ```bash
-# Clone the repository
-git clone https://github.com/anthony-meza/xndbc.git
-cd xndbc
-
-# Create and activate the development environment
 conda env create -f docs/environment.yml
 conda activate xndbc-dev
-
-# Run the test suite
-pytest
+pytest -q
+sphinx-build -W --keep-going -b html . docs/_build/html
 ```
 
-## Contributing
+CI checks the code, executes notebooks against offline fixtures, and builds the
+website. API pages come from code docstrings; product and variable tables
+come from code; notebooks appear automatically in the download gallery.
+See [development notes](docs/notes.rst) for the documentation workflow.
 
-Interested in contributing? Check out the contributing guidelines. Please note that this project is released with a Code of Conduct. By contributing to this project, you agree to abide by its terms.
-
-## License
-
-`xndbc` was created by Anthony Meza. It is licensed under the terms of the MIT license.
-
-## Credits
-
-`xndbc` was created with [`cookiecutter`](https://cookiecutter.readthedocs.io/en/latest/) and the `py-pkgs-cookiecutter` [template](https://github.com/py-pkgs/py-pkgs-cookiecutter).
+Issues and pull requests with reproducible examples are welcome. Keep discussions
+respectful and constructive. Created by Anthony Meza; [MIT licensed](LICENSE).
